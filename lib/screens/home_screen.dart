@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../providers/language_provider.dart';
+import '../providers/theme_provider.dart';
 import 'quiz_screen.dart';
 
 // --- SCHERMATA 1: LA LISTA DELLE LEZIONI (HOME) ---
@@ -21,6 +22,18 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF58CC02),
         foregroundColor: Colors.white,
         actions: [
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return IconButton(
+                icon: Icon(
+                  themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                ),
+                onPressed: () {
+                  themeProvider.toggleTheme(!themeProvider.isDarkMode);
+                },
+              );
+            },
+          ),
           Consumer<LanguageProvider>(
             builder: (context, languageProvider, child) {
               return PopupMenuButton<Locale>(

@@ -6,13 +6,17 @@ import 'l10n/generated/app_localizations.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'providers/language_provider.dart';
+import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => LanguageProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
       child: const HaideApp(),
     ),
   );
@@ -23,17 +27,36 @@ class HaideApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LanguageProvider>(
-      builder: (context, languageProvider, child) {
+    return Consumer2<LanguageProvider, ThemeProvider>(
+      builder: (context, languageProvider, themeProvider, child) {
         return MaterialApp(
           title: 'HAIDE Learner',
           debugShowCheckedModeBanner: false,
+          themeMode: themeProvider.themeMode,
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
               seedColor: const Color(0xFF58CC02),
             ),
             useMaterial3: true,
             fontFamily: 'Verdana',
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF58CC02),
+              foregroundColor: Colors.white,
+            ),
+          ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF58CC02),
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+            fontFamily: 'Verdana',
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(
+                0xFF58CC02,
+              ), // Manteniamo il verde anche in dark mode, o possiamo cambiarlo
+              foregroundColor: Colors.white,
+            ),
           ),
           locale: languageProvider.currentLocale,
           localizationsDelegates: const [
