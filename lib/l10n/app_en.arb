@@ -1,0 +1,50 @@
+{
+    "@@locale": "en",
+    "helloWorld": "Hello World!",
+    "startQuiz": "Start Quiz",
+    "quizTitle": "Quiz",
+    "question": "Question",
+    "score": "Score",
+    "correct": "Correct!",
+    "wrong": "Wrong!",
+    "nextQuestion": "Next Question",
+    "finishQuiz": "Finish Quiz",
+    "resultTime": "Time",
+    "settings": "Settings",
+    "language": "Language",
+    "learningPath": "Learning Path",
+    "lessonEmpty": "This lesson is empty!",
+    "questionsCount": "{count} questions",
+    "@questionsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "whatIsThis": "What is this?",
+    "howToSay": "How do you say...",
+    "bravo": "BRAVO! 🎉",
+    "wrongMessage": "WRONG! 😢 It was: {correct}",
+    "@wrongMessage": {
+        "placeholders": {
+            "correct": {
+                "type": "String"
+            }
+        }
+    },
+    "gameOver": "GAME OVER",
+    "noLives": "No lives left! You must restart the lesson.",
+    "retry": "Retry",
+    "lessonCompleted": "Lesson Completed! 🏆",
+    "continueBtn": "CONTINUE",
+    "livesLeft": "Lives left: {count} ❤️",
+    "@livesLeft": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "imageError": "Image Error"
+}
