@@ -1,7 +1,10 @@
 // File: lib/screens/quiz_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../widgets/animazione_scossa.dart';
+import '../providers/language_provider.dart';
 
 class QuizScreen extends StatefulWidget {
   final String titoloLezione;
@@ -42,8 +45,21 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Future<void> _parlaCurrent() async {
-    // Legge sempre il campo "pronuncia" per la pronuncia corretta
-    String testoDaLeggere = widget.domande[_indiceDomanda]['pronuncia'] ?? '';
+    final languageProvider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
+    final isEnglish = languageProvider.currentLocale.languageCode == 'en';
+    final domanda = widget.domande[_indiceDomanda];
+
+    String testoDaLeggere = '';
+
+    if (isEnglish) {
+      testoDaLeggere = domanda['pronuncia_en'] ?? domanda['pronuncia'] ?? '';
+    } else {
+      testoDaLeggere = domanda['pronuncia'] ?? '';
+    }
+
     if (testoDaLeggere.isNotEmpty) {
       await flutterTts.speak(testoDaLeggere);
     }
@@ -52,19 +68,21 @@ class _QuizScreenState extends State<QuizScreen> {
   void _verificaRisposta(String scelta, String corretta) {
     if (_rispostaData || _gameOver) return;
 
+    final l10n = AppLocalizations.of(context)!;
+
     setState(() {
       _rispostaData = true;
 
       if (scelta == corretta) {
         _punteggio++;
-        _mostraMessaggio("BRAVO! 🎉", Colors.green);
+        _mostraMessaggio(l10n.bravo, Colors.green);
         _avanzaDomanda();
       } else {
         _vite--;
         _erroreRecente = true;
         _shakeKey.currentState?.scuoti();
         _mostraMessaggio(
-          "SBAGLIATO! 😢 Era: $corretta",
+          l10n.wrongMessage(corretta),
           Colors.red,
         ); // Ti dice qual era quella giusta
 
@@ -119,30 +137,32 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _mostraGameOver() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.heart_broken, color: Colors.red, size: 30),
-            SizedBox(width: 10),
-            Text("GAME OVER"),
+            const Icon(Icons.heart_broken, color: Colors.red, size: 30),
+            const SizedBox(width: 10),
+            Text(l10n.gameOver),
           ],
         ),
-        content: const Text(
-          "Hai finito le vite! Devi ricominciare la lezione.",
-        ),
+        content: Text(l10n.noLives),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
             },
-            child: const Text(
-              "Riprova",
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            child: Text(
+              l10n.retry,
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -151,24 +171,25 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _fineLezione() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Lezione Completata! 🏆"),
+        title: Text(l10n.lessonCompleted),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.stars, color: Colors.orange, size: 60),
             const SizedBox(height: 20),
             Text(
-              "Punteggio: $_punteggio / ${widget.domande.length}",
+              "${l10n.score}: $_punteggio / ${widget.domande.length}",
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 10),
             Text(
-              "Vite rimaste: $_vite ❤️",
+              l10n.livesLeft(_vite),
               style: const TextStyle(color: Colors.grey),
             ),
           ],
@@ -183,7 +204,7 @@ class _QuizScreenState extends State<QuizScreen> {
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
             },
-            child: const Text("CONTINUA"),
+            child: Text(l10n.continueBtn),
           ),
         ],
       ),
@@ -192,22 +213,46 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final domandaCorrente = widget.domande[_indiceDomanda];
 
     // --- LOGICA IBRIDA ---
+    // 0. Recupera lingua corrente
+    final languageProvider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    ); // O usa listen: true se vuoi rebuild al cambio lingua qui (ma non c'è tasto)
+    final isEnglish = languageProvider.currentLocale.languageCode == 'en';
+
     // 1. Dati comuni
     final parolaBulgara = domandaCorrente['bulgaro'] ?? '?';
     final pronuncia = domandaCorrente['pronuncia'] ?? '';
-    final opzioni = List<String>.from(domandaCorrente['opzioni'] ?? []);
+
+    // Scelta opzioni in base alla lingua
+    List<String> opzioni;
+    if (isEnglish && domandaCorrente['opzioni_en'] != null) {
+      opzioni = List<String>.from(domandaCorrente['opzioni_en']);
+    } else {
+      opzioni = List<String>.from(domandaCorrente['opzioni'] ?? []);
+    }
 
     // 2. Controllo se c'è un'immagine
     final String? immagineUrl = domandaCorrente['immagine'];
 
     // 3. Determina la risposta corretta
-    // Se c'è il campo 'soluzione' (nuove lezioni) usa quello,
-    // altrimenti usa 'italiano' (vecchie lezioni).
-    final String rispostaCorretta =
-        domandaCorrente['soluzione'] ?? domandaCorrente['italiano'] ?? '';
+    String rispostaCorretta;
+    if (isEnglish) {
+      // Se inglese, usa il campo 'inglese', fallback su 'soluzione' o 'italiano' se mancasse (meglio evitare errori)
+      rispostaCorretta =
+          domandaCorrente['inglese'] ??
+          domandaCorrente['soluzione'] ??
+          domandaCorrente['italiano'] ??
+          '';
+    } else {
+      // Se italiano
+      rispostaCorretta =
+          domandaCorrente['soluzione'] ?? domandaCorrente['italiano'] ?? '';
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -269,7 +314,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
             // Domanda: "Come si dice..." oppure "Cos'è questo?"
             Text(
-              immagineUrl != null ? "Cos'è questo?" : "Come si dice...",
+              immagineUrl != null ? l10n.whatIsThis : l10n.howToSay,
               style: TextStyle(color: Colors.grey[600], fontSize: 18),
               textAlign: TextAlign.center,
             ),
@@ -299,13 +344,16 @@ class _QuizScreenState extends State<QuizScreen> {
                             child: Center(child: CircularProgressIndicator()),
                           );
                         },
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Column(
-                              children: [
-                                Icon(Icons.error, size: 50, color: Colors.red),
-                                Text("Errore immagine"),
-                              ],
+                        errorBuilder: (context, error, stackTrace) => Column(
+                          children: [
+                            const Icon(
+                              Icons.error,
+                              size: 50,
+                              color: Colors.red,
                             ),
+                            Text(l10n.imageError),
+                          ],
+                        ),
                       ),
                     )
                   else
