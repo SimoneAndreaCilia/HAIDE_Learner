@@ -6,6 +6,7 @@ import '../l10n/generated/app_localizations.dart';
 import '../providers/language_provider.dart';
 import '../providers/theme_provider.dart';
 import 'quiz_screen.dart';
+import 'alphabet_list_screen.dart';
 
 // --- SCHERMATA 1: LA LISTA DELLE LEZIONI (HOME) ---
 class HomeScreen extends StatelessWidget {
@@ -14,7 +15,9 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isEnglish = Localizations.localeOf(context).languageCode == 'en';
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.learningPath),
@@ -25,11 +28,9 @@ class HomeScreen extends StatelessWidget {
           Consumer<ThemeProvider>(
             builder: (context, themeProvider, child) {
               return IconButton(
-                icon: Icon(
-                  themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                ),
+                icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
                 onPressed: () {
-                  themeProvider.toggleTheme(!themeProvider.isDarkMode);
+                  themeProvider.toggleTheme(!isDark);
                 },
               );
             },
@@ -67,13 +68,66 @@ class HomeScreen extends StatelessWidget {
 
           return ListView.builder(
             padding: const EdgeInsets.all(20),
-            itemCount: documenti.length,
+            itemCount: documenti.length + 1,
             itemBuilder: (context, index) {
-              final lezione = documenti[index].data() as Map<String, dynamic>;
-              
+              if (index == 0) {
+                return Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  color: isDark
+                      ? null
+                      : const Color(
+                          0xFFE5F6FD,
+                        ), // Light blue only in light mode
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(20),
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blue,
+                      radius: 30,
+                      child: const Text(
+                        "АБ",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      l10n.learningPath == "Learning Path"
+                          ? "Bulgarian Alphabet"
+                          : "Alfabeto Bulgaro",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    subtitle: Text(
+                      l10n.learningPath == "Learning Path"
+                          ? "Learn the 30 letters"
+                          : "Impara le 30 lettere",
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AlphabetListScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
+
+              final docIndex = index - 1;
+              final lezione =
+                  documenti[docIndex].data() as Map<String, dynamic>;
+
               // Recupera il titolo in base alla lingua
-              final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-              final isEnglish = languageProvider.currentLocale.languageCode == 'en';
               String titolo = lezione['titolo'] ?? 'Lezione';
               if (isEnglish && lezione['titolo_en'] != null) {
                 titolo = lezione['titolo_en'];
@@ -121,11 +175,9 @@ class HomeScreen extends StatelessWidget {
                         ),
                       );
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(l10n.lessonEmpty),
-                        ),
-                      );
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(l10n.lessonEmpty)));
                     }
                   },
                 ),
