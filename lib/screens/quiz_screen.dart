@@ -9,11 +9,13 @@ import '../providers/language_provider.dart';
 class QuizScreen extends StatefulWidget {
   final String titoloLezione;
   final List<Map<String, dynamic>> domande;
+  final bool isCustomQuiz;
 
   const QuizScreen({
     super.key,
     required this.titoloLezione,
     required this.domande,
+    this.isCustomQuiz = false,
   });
 
   @override
@@ -202,7 +204,7 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
             onPressed: () {
               Navigator.of(ctx).pop();
-              Navigator.of(context).pop();
+              Navigator.of(context).pop(true);
             },
             child: Text(l10n.continueBtn),
           ),
@@ -253,6 +255,10 @@ class _QuizScreenState extends State<QuizScreen> {
       rispostaCorretta =
           domandaCorrente['soluzione'] ?? domandaCorrente['italiano'] ?? '';
     }
+
+    // 4. Tipo di domanda (text, audio)
+    final String tipoDomanda = domandaCorrente['type'] ?? 'text';
+    final bool isAudioQuestion = tipoDomanda == 'audio';
 
     return Scaffold(
       appBar: AppBar(
@@ -312,11 +318,28 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
             const Spacer(),
 
-            // Domanda: "Come si dice..." oppure "Cos'è questo?"
-            Text(
-              immagineUrl != null ? l10n.whatIsThis : l10n.howToSay,
-              style: TextStyle(color: Colors.grey[600], fontSize: 18),
-              textAlign: TextAlign.center,
+            // Domanda: "Come si dice..." oppure "Cos'è questo?" oppure CUSTOM
+            Builder(
+              builder: (context) {
+                String questionText;
+                if (isEnglish) {
+                  questionText =
+                      domandaCorrente['question_en'] ??
+                      domandaCorrente['question'] ??
+                      (immagineUrl != null ? l10n.whatIsThis : l10n.howToSay);
+                } else {
+                  questionText =
+                      domandaCorrente['question_it'] ??
+                      domandaCorrente['question'] ??
+                      (immagineUrl != null ? l10n.whatIsThis : l10n.howToSay);
+                }
+
+                return Text(
+                  questionText,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 18),
+                  textAlign: TextAlign.center,
+                );
+              },
             ),
             const SizedBox(height: 20),
 
@@ -329,13 +352,13 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
               child: Column(
                 children: [
-                  // Se c'è l'immagine, mostrala. Altrimenti mostra il testo bulgaro.
+                  // Se c'è l'immagine, mostrala.
                   if (immagineUrl != null && immagineUrl.isNotEmpty)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: Image.network(
                         immagineUrl,
-                        height: 200, // Altezza fissa per non sballare il layout
+                        height: 200,
                         fit: BoxFit.cover,
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
@@ -356,14 +379,18 @@ class _QuizScreenState extends State<QuizScreen> {
                         ),
                       ),
                     )
-                  else
+                  else if (!isAudioQuestion)
+                    // MOSTRIAMO IL TESTO SOLO SE NON È UNA DOMANDA AUDIO
                     Text(
                       parolaBulgara,
                       style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
                       ),
-                    ),
+                    )
+                  else
+                    // Placeholder per bilanciare l'altezza se è solo audio
+                    const SizedBox(height: 50),
 
                   const SizedBox(height: 10),
 
@@ -371,8 +398,8 @@ class _QuizScreenState extends State<QuizScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Se c'è l'immagine, non mostriamo la pronuncia scritta (sarebbe un suggerimento troppo facile!)
-                      if (immagineUrl == null)
+                      // Se c'è l'immagine o È AUDIO, non mostriamo la pronuncia scritta
+                      if (immagineUrl == null && !isAudioQuestion)
                         Text(
                           pronuncia,
                           style: const TextStyle(
@@ -382,17 +409,28 @@ class _QuizScreenState extends State<QuizScreen> {
                           ),
                         ),
 
-                      const SizedBox(width: 10),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.volume_up,
-                          color: Colors.blue,
-                          size: 30,
+                      if (!isAudioQuestion && !widget.isCustomQuiz)
+                        const SizedBox(width: 10),
+
+                      // Bottone Audio logic:
+                      // 1. If isAudioQuestion -> Show BIG centered button (handled by UI above, essentially)
+                      // 2. If !isAudioQuestion AND isCustomQuiz -> HIDE BUTTON (user request)
+                      // 3. If !isAudioQuestion AND !isCustomQuiz -> Show Standard button
+                      if (isAudioQuestion || !widget.isCustomQuiz)
+                        Transform.scale(
+                          scale: isAudioQuestion ? 2.0 : 1.0,
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.volume_up,
+                              color: Colors.blue,
+                              size: 30,
+                            ),
+                            onPressed: _parlaCurrent,
+                          ),
                         ),
-                        onPressed: _parlaCurrent,
-                      ),
                     ],
                   ),
+                  if (isAudioQuestion) const SizedBox(height: 40),
                 ],
               ),
             ),
