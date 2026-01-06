@@ -34,10 +34,37 @@ class _QuizScreenState extends State<QuizScreen> {
   final GlobalKey<AnimazioneScossaState> _shakeKey =
       GlobalKey<AnimazioneScossaState>();
 
+  late List<Map<String, dynamic>> _domande;
+
   @override
   void initState() {
     super.initState();
+    _inizializzaDomande();
     _configuraVoce();
+  }
+
+  void _inizializzaDomande() {
+    // Creiamo una copia profonda delle domande per poter mischiare le opzioni
+    // senza modificare la lista originale (regola d'oro #1)
+    _domande = widget.domande.map((domanda) {
+      final nuovaDomanda = Map<String, dynamic>.from(domanda);
+
+      // Mischia opzioni italiane
+      if (nuovaDomanda['opzioni'] != null) {
+        final opzioni = List<String>.from(nuovaDomanda['opzioni']);
+        opzioni.shuffle();
+        nuovaDomanda['opzioni'] = opzioni;
+      }
+
+      // Mischia opzioni inglesi (se presenti)
+      if (nuovaDomanda['opzioni_en'] != null) {
+        final opzioniCm = List<String>.from(nuovaDomanda['opzioni_en']);
+        opzioniCm.shuffle();
+        nuovaDomanda['opzioni_en'] = opzioniCm;
+      }
+
+      return nuovaDomanda;
+    }).toList();
   }
 
   void _configuraVoce() async {
@@ -52,7 +79,7 @@ class _QuizScreenState extends State<QuizScreen> {
       listen: false,
     );
     final isEnglish = languageProvider.currentLocale.languageCode == 'en';
-    final domanda = widget.domande[_indiceDomanda];
+    final domanda = _domande[_indiceDomanda];
 
     String testoDaLeggere = '';
 
@@ -109,7 +136,7 @@ class _QuizScreenState extends State<QuizScreen> {
   void _avanzaDomanda() {
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (_vite > 0 && mounted) {
-        if (_indiceDomanda < widget.domande.length - 1) {
+        if (_indiceDomanda < _domande.length - 1) {
           setState(() {
             _indiceDomanda++;
             _rispostaData = false;
@@ -186,7 +213,7 @@ class _QuizScreenState extends State<QuizScreen> {
             const Icon(Icons.stars, color: Colors.orange, size: 60),
             const SizedBox(height: 20),
             Text(
-              "${l10n.score}: $_punteggio / ${widget.domande.length}",
+              "${l10n.score}: $_punteggio / ${_domande.length}",
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 10),
@@ -216,7 +243,7 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final domandaCorrente = widget.domande[_indiceDomanda];
+    final domandaCorrente = _domande[_indiceDomanda];
 
     // --- LOGICA IBRIDA ---
     // 0. Recupera lingua corrente
@@ -310,7 +337,7 @@ class _QuizScreenState extends State<QuizScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: LinearProgressIndicator(
-                value: (_indiceDomanda + 1) / widget.domande.length,
+                value: (_indiceDomanda + 1) / _domande.length,
                 minHeight: 15,
                 color: _vite > 1 ? const Color(0xFF58CC02) : Colors.orange,
                 backgroundColor: Colors.grey.shade200,
