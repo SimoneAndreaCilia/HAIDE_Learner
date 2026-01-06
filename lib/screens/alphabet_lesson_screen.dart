@@ -57,6 +57,9 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
           return [];
         }
 
+        final opzioni = safeList(q['options']);
+        opzioni.shuffle();
+
         return {
           'domanda': safeStr(q['question_it']).isNotEmpty
               ? safeStr(q['question_it'])
@@ -66,7 +69,7 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
           'question_en': q['question_en'],
           'bulgaro': safeStr(q['bulgarian_text']),
           'pronuncia': safeStr(q['audio_text']),
-          'opzioni': safeList(q['options']),
+          'opzioni': opzioni,
           'soluzione': safeStr(q['correct_answer']),
           'italiano': safeStr(q['correct_answer']),
           'inglese': safeStr(q['correct_answer']),
