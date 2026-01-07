@@ -57,7 +57,10 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('lezioni').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('lezioni')
+            .limit(20)
+            .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());

@@ -9,13 +9,25 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:haide/main.dart';
 
+import 'package:provider/provider.dart';
+import 'package:haide/providers/language_provider.dart';
+import 'package:haide/providers/theme_provider.dart';
+
 void main() {
   testWidgets('App starts smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     // Note: HaideApp uses Firebase, so we need to mock it for this test to run.
     // For now, we just ensure it compiles by referencing the correct class.
 
-    await tester.pumpWidget(const HaideApp());
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => LanguageProvider()),
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ],
+        child: const HaideApp(),
+      ),
+    );
 
     // Verify that our counter starts at 0.
     // expect(find.text('0'), findsOneWidget);
