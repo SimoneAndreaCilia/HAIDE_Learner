@@ -102,6 +102,14 @@ class UnitLessonsScreen extends StatelessWidget {
                             color: Colors.white,
                             size: 30,
                           )
+                        : (lessonTitle.contains('Cortesia') ||
+                              lessonTitle.contains('Cortesy') ||
+                              lessonTitle.contains('Courtesy'))
+                        ? const Icon(
+                            Icons.handshake,
+                            color: Colors.white,
+                            size: 30,
+                          )
                         : Text(
                             "${index + 1}",
                             style: const TextStyle(
@@ -137,12 +145,18 @@ class UnitLessonsScreen extends StatelessWidget {
                   trailing: const Icon(Icons.arrow_forward_ios),
                   onTap: () {
                     if (questions.isNotEmpty) {
+                      // Extract tips if available
+                      final tips = lessonData['tips'] != null
+                          ? List<Map<String, dynamic>>.from(lessonData['tips'])
+                          : null;
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => QuizScreen(
                             titoloLezione: lessonTitle,
                             domande: questions,
+                            tips: tips,
                           ),
                         ),
                       );

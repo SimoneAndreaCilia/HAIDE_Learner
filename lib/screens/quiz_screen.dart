@@ -1,5 +1,5 @@
-// File: lib/screens/quiz_screen.dart
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:provider/provider.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../l10n/generated/app_localizations.dart';
@@ -9,12 +9,15 @@ import '../providers/language_provider.dart';
 class QuizScreen extends StatefulWidget {
   final String titoloLezione;
   final List<Map<String, dynamic>> domande;
+  final List<Map<String, dynamic>>?
+  tips; // Aggiunto parametro opzionale per i tips
   final bool isCustomQuiz;
 
   const QuizScreen({
     super.key,
     required this.titoloLezione,
     required this.domande,
+    this.tips,
     this.isCustomQuiz = false,
   });
 
@@ -22,7 +25,7 @@ class QuizScreen extends StatefulWidget {
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _QuizScreenState extends State<QuizScreen> {
+class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   int _indiceDomanda = 0;
   int _punteggio = 0;
   int _vite = 3;
@@ -36,11 +39,34 @@ class _QuizScreenState extends State<QuizScreen> {
 
   late List<Map<String, dynamic>> _domande;
 
+  // Animation for the tips lightbulb
+  late AnimationController _tipsAnimController;
+
   @override
   void initState() {
     super.initState();
     _inizializzaDomande();
     _configuraVoce();
+
+    // Initialize Wiggle/Shake animation
+    _tipsAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    // Start with a delay or immediately, creating a shake effect loop
+    _startWiggle();
+  }
+
+  void _startWiggle() {
+    // Esegue l'animazione avanti e indietro
+    _tipsAnimController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _tipsAnimController.dispose();
+    super.dispose();
   }
 
   void _inizializzaDomande() {
@@ -291,6 +317,135 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
+  void _showTipsModal(BuildContext context) {
+    if (widget.tips == null || widget.tips!.isEmpty) return;
+
+    final isEnglish = Localizations.localeOf(context).languageCode == 'en';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Permette alla finestra di essere alta
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6, // Occupa il 60% dello schermo all'inizio
+          maxChildSize: 0.9,
+          minChildSize: 0.4,
+          expand: false,
+          builder: (context, scrollController) {
+            return Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Maniglia per trascinare
+                  Center(
+                    child: Container(
+                      width: 50,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Titolo della sezione
+                  Text(
+                    isEnglish ? "Tips & Grammar" : "Note & Grammatica",
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.indigo,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Lista delle Note
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: widget.tips!.length,
+                      itemBuilder: (context, index) {
+                        final tip = widget.tips![index];
+                        final title = isEnglish
+                            ? (tip['title_en'] ?? tip['title'])
+                            : tip['title'];
+                        final content = isEnglish
+                            ? (tip['content_en'] ?? tip['content'])
+                            : tip['content'];
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 20),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50], // Sfondo leggero
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(color: Colors.blue.shade100),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.info_outline,
+                                    color: Colors.blue,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                content,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[800],
+                                  height: 1.5, // Migliora la leggibilità
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Bottone "Ho capito"
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                      child: Text(isEnglish ? "Got it!" : "Ho capito!"),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -342,6 +497,31 @@ class _QuizScreenState extends State<QuizScreen> {
       appBar: AppBar(
         title: Text(widget.titoloLezione),
         actions: [
+          if (widget.tips != null && widget.tips!.isNotEmpty)
+            AnimatedBuilder(
+              animation: _tipsAnimController,
+              builder: (context, child) {
+                // Wiggle logic: sine wave
+                // Multiplier 3 * 2 * pi makes it shake 3 times per cycle
+                // 0.2 is the amplitude (angle in radians)
+                final angle =
+                    math.sin(_tipsAnimController.value * math.pi * 2 * 3) * 0.2;
+                return Transform.rotate(
+                  angle: angle,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.lightbulb,
+                      color: Colors.yellowAccent,
+                    ),
+                    onPressed: () {
+                      _tipsAnimController.stop(); // Stop shaking
+                      _tipsAnimController.value = 0; // Reset to center
+                      _showTipsModal(context);
+                    },
+                  ),
+                );
+              },
+            ),
           AnimazioneScossa(
             key: _shakeKey,
             child: Padding(
