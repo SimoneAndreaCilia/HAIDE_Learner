@@ -7,6 +7,7 @@ import '../providers/language_provider.dart';
 import '../providers/theme_provider.dart';
 import 'quiz_screen.dart';
 import 'alphabet_list_screen.dart';
+import 'unit_lessons_screen.dart';
 
 // --- SCHERMATA 1: LA LISTA DELLE LEZIONI (HOME) ---
 class HomeScreen extends StatelessWidget {
@@ -70,7 +71,7 @@ class HomeScreen extends StatelessWidget {
 
           return ListView.builder(
             padding: const EdgeInsets.all(20),
-            itemCount: documenti.length + 1,
+            itemCount: documenti.length + 2,
             itemBuilder: (context, index) {
               if (index == 0) {
                 return Card(
@@ -125,7 +126,59 @@ class HomeScreen extends StatelessWidget {
                 );
               }
 
-              final docIndex = index - 1;
+              if (index == 1) {
+                return Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  color: isDark ? null : const Color(0xFFE8F5E9), // Light green
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(20),
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.teal,
+                      radius: 30,
+                      child: const Icon(
+                        Icons.explore,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    title: Text(
+                      isEnglish ? "Survival Guide" : "Kit di Sopravvivenza",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    subtitle: Text(
+                      isEnglish
+                          ? "Essential phrases for beginners"
+                          : "Frasi essenziali per principianti",
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UnitLessonsScreen(
+                            unitId: 'unit_01_survival',
+                            title: isEnglish
+                                ? 'Survival Guide'
+                                : 'Kit di Sopravvivenza',
+                            description: isEnglish
+                                ? 'Essential phrases'
+                                : 'Frasi essenziali',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
+
+              final docIndex = index - 2; // Adjusted for 2 static cards
               final lezione =
                   documenti[docIndex].data() as Map<String, dynamic>;
 
