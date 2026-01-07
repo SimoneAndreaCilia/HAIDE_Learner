@@ -110,6 +110,13 @@ class UnitLessonsScreen extends StatelessWidget {
                             color: Colors.white,
                             size: 30,
                           )
+                        : (lessonTitle.contains('Presentazioni') ||
+                              lessonTitle.contains('Introductions'))
+                        ? const Icon(
+                            Icons.people,
+                            color: Colors.white,
+                            size: 30,
+                          )
                         : Text(
                             "${index + 1}",
                             style: const TextStyle(
