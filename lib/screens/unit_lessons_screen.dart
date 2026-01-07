@@ -145,12 +145,18 @@ class UnitLessonsScreen extends StatelessWidget {
                   trailing: const Icon(Icons.arrow_forward_ios),
                   onTap: () {
                     if (questions.isNotEmpty) {
+                      // Extract tips if available
+                      final tips = lessonData['tips'] != null
+                          ? List<Map<String, dynamic>>.from(lessonData['tips'])
+                          : null;
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => QuizScreen(
                             titoloLezione: lessonTitle,
                             domande: questions,
+                            tips: tips,
                           ),
                         ),
                       );
