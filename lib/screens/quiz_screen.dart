@@ -104,20 +104,23 @@ class _QuizScreenState extends State<QuizScreen> {
 
       if (scelta == corretta) {
         _punteggio++;
-        _mostraMessaggio(l10n.bravo, Colors.green);
+        _mostraFeedbackAnimato(l10n.bravo, true);
         _avanzaDomanda();
       } else {
         _vite--;
         _erroreRecente = true;
         _shakeKey.currentState?.scuoti();
-        _mostraMessaggio(
+        _mostraFeedbackAnimato(
           l10n.wrongMessage(corretta),
-          Colors.red,
+          false,
         ); // Ti dice qual era quella giusta
 
         if (_vite == 0) {
           _gameOver = true;
-          _mostraGameOver();
+          // Ritardiamo il Game Over per far vedere l'errore
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            if (mounted) _mostraGameOver();
+          });
         } else {
           Future.delayed(const Duration(milliseconds: 1500), () {
             // Tempo aumentato un po' per leggere l'errore
@@ -149,20 +152,68 @@ class _QuizScreenState extends State<QuizScreen> {
     });
   }
 
-  void _mostraMessaggio(String testo, Color colore) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          testo,
-          style: const TextStyle(fontSize: 18, color: Colors.white),
-        ),
-        backgroundColor: colore,
-        duration: const Duration(milliseconds: 1000),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+  void _mostraFeedbackAnimato(String testo, bool corretto) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: '',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 500),
+      pageBuilder: (ctx, anim1, anim2) {
+        return const SizedBox();
+      },
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(parent: anim1, curve: Curves.elasticOut),
+          child: FadeTransition(
+            opacity: anim1,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              backgroundColor: corretto
+                  ? Colors.green.shade50
+                  : Colors.red.shade50,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 20,
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    corretto
+                        ? Icons.celebration
+                        : Icons.sentiment_very_dissatisfied,
+                    color: corretto ? Colors.green : Colors.red,
+                    size: 60,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    testo,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: corretto
+                          ? Colors.green.shade800
+                          : Colors.red.shade800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
+
+    // Chiude automaticamente il popup dopo un po'
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
+    });
   }
 
   void _mostraGameOver() {

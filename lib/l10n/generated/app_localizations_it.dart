@@ -62,7 +62,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get howToSay => 'Come si dice...';
 
   @override
-  String get bravo => 'BRAVO! 🎉';
+  String get bravo => 'браво!🎉 (bravo)';
 
   @override
   String wrongMessage(String correct) {

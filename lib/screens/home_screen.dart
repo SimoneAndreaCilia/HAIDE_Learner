@@ -22,8 +22,7 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.learningPath),
         centerTitle: true,
-        backgroundColor: const Color(0xFF58CC02),
-        foregroundColor: Colors.white,
+
         actions: [
           Consumer<ThemeProvider>(
             builder: (context, themeProvider, child) {

@@ -60,6 +60,11 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
         final opzioni = safeList(q['options']);
         opzioni.shuffle();
 
+        final opzioniEn = safeList(q['options_en']);
+        if (opzioniEn.isNotEmpty) {
+          opzioniEn.shuffle();
+        }
+
         return {
           'domanda': safeStr(q['question_it']).isNotEmpty
               ? safeStr(q['question_it'])
@@ -70,6 +75,7 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
           'bulgaro': safeStr(q['bulgarian_text']),
           'pronuncia': safeStr(q['audio_text']),
           'opzioni': opzioni,
+          'opzioni_en': opzioniEn.isNotEmpty ? opzioniEn : null,
           'soluzione': safeStr(q['correct_answer']),
           'italiano': safeStr(q['correct_answer']),
           'inglese': safeStr(q['correct_answer']),
@@ -659,8 +665,12 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
           ),
         ],
       ),
-      const Color(0xFF58CC02), // Duolingo green-ish
-      const Color(0xFF46A302),
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF2E7D32) // Darker green for dark mode
+          : const Color(0xFF58CC02), // Duolingo green-ish
+      Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF1B5E20) // Even darker border
+          : const Color(0xFF46A302),
     );
   }
 

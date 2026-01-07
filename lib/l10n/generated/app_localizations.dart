@@ -203,7 +203,7 @@ abstract class AppLocalizations {
   /// No description provided for @bravo.
   ///
   /// In it, this message translates to:
-  /// **'BRAVO! 🎉'**
+  /// **'браво!🎉 (bravo)'**
   String get bravo;
 
   /// No description provided for @wrongMessage.

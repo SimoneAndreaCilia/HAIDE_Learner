@@ -24,7 +24,7 @@
     },
     "whatIsThis": "Cos'è questo?",
     "howToSay": "Come si dice...",
-    "bravo": "BRAVO! 🎉",
+    "bravo": "браво!🎉 (bravo)",
     "wrongMessage": "SBAGLIATO! 😢 Era: {correct}",
     "@wrongMessage": {
         "placeholders": {

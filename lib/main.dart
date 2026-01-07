@@ -8,6 +8,8 @@ import 'screens/home_screen.dart';
 import 'providers/language_provider.dart';
 import 'providers/theme_provider.dart';
 
+import 'package:google_fonts/google_fonts.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -39,9 +41,14 @@ class HaideApp extends StatelessWidget {
             ),
             useMaterial3: true,
             fontFamily: 'Verdana',
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFF58CC02),
+            appBarTheme: AppBarTheme(
+              backgroundColor: const Color(0xFF58CC02),
               foregroundColor: Colors.white,
+              titleTextStyle: GoogleFonts.nunito(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           darkTheme: ThemeData(
@@ -51,11 +58,16 @@ class HaideApp extends StatelessWidget {
             ),
             useMaterial3: true,
             fontFamily: 'Verdana',
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Color(
-                0xFF58CC02,
-              ), // Manteniamo il verde anche in dark mode, o possiamo cambiarlo
+            appBarTheme: AppBarTheme(
+              backgroundColor: const Color(
+                0xFF1B5E20,
+              ), // Darker green for dark mode
               foregroundColor: Colors.white,
+              titleTextStyle: GoogleFonts.nunito(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           locale: languageProvider.currentLocale,
