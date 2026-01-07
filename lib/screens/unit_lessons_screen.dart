@@ -110,6 +110,27 @@ class UnitLessonsScreen extends StatelessWidget {
                             color: Colors.white,
                             size: 30,
                           )
+                        : (lessonTitle.contains('Barriere') ||
+                              lessonTitle.contains('Barriers'))
+                        ? const Icon(
+                            Icons.translate,
+                            color: Colors.white,
+                            size: 30,
+                          )
+                        : (lessonTitle.contains('Bisogni') ||
+                              lessonTitle.contains('Needs'))
+                        ? const Icon(
+                            Icons.local_dining,
+                            color: Colors.white,
+                            size: 30,
+                          )
+                        : (lessonTitle.contains('Emergenze') ||
+                              lessonTitle.contains('Emergencies'))
+                        ? const Icon(
+                            Icons.emergency,
+                            color: Colors.white,
+                            size: 30,
+                          )
                         : (lessonTitle.contains('Presentazioni') ||
                               lessonTitle.contains('Introductions'))
                         ? const Icon(
