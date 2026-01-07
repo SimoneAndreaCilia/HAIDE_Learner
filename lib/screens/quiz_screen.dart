@@ -402,11 +402,13 @@ class _QuizScreenState extends State<QuizScreen> {
                 String questionText;
                 if (isEnglish) {
                   questionText =
+                      domandaCorrente['text_question_en'] ??
                       domandaCorrente['question_en'] ??
                       domandaCorrente['question'] ??
                       (immagineUrl != null ? l10n.whatIsThis : l10n.howToSay);
                 } else {
                   questionText =
+                      domandaCorrente['text_question_it'] ??
                       domandaCorrente['question_it'] ??
                       domandaCorrente['question'] ??
                       (immagineUrl != null ? l10n.whatIsThis : l10n.howToSay);
