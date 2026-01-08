@@ -7,12 +7,14 @@ class UnitLessonsScreen extends StatelessWidget {
   final String unitId;
   final String title;
   final String description;
+  final Color topicColor;
 
   const UnitLessonsScreen({
     super.key,
     required this.unitId,
     required this.title,
     required this.description,
+    required this.topicColor,
   });
 
   @override
@@ -22,7 +24,12 @@ class UnitLessonsScreen extends StatelessWidget {
     final isEnglish = Localizations.localeOf(context).languageCode == 'en';
 
     return Scaffold(
-      appBar: AppBar(title: Text(title), centerTitle: true),
+      appBar: AppBar(
+        title: Text(title, style: const TextStyle(color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: topicColor,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('courses')
@@ -92,60 +99,9 @@ class UnitLessonsScreen extends StatelessWidget {
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(20),
                   leading: CircleAvatar(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: topicColor,
                     radius: 30,
-                    child:
-                        (lessonTitle.contains('Saluti') ||
-                            lessonTitle.contains('Greetings'))
-                        ? const Icon(
-                            Icons.waving_hand,
-                            color: Colors.white,
-                            size: 30,
-                          )
-                        : (lessonTitle.contains('Cortesia') ||
-                              lessonTitle.contains('Cortesy') ||
-                              lessonTitle.contains('Courtesy'))
-                        ? const Icon(
-                            Icons.handshake,
-                            color: Colors.white,
-                            size: 30,
-                          )
-                        : (lessonTitle.contains('Barriere') ||
-                              lessonTitle.contains('Barriers'))
-                        ? const Icon(
-                            Icons.translate,
-                            color: Colors.white,
-                            size: 30,
-                          )
-                        : (lessonTitle.contains('Bisogni') ||
-                              lessonTitle.contains('Needs'))
-                        ? const Icon(
-                            Icons.local_dining,
-                            color: Colors.white,
-                            size: 30,
-                          )
-                        : (lessonTitle.contains('Emergenze') ||
-                              lessonTitle.contains('Emergencies'))
-                        ? const Icon(
-                            Icons.emergency,
-                            color: Colors.white,
-                            size: 30,
-                          )
-                        : (lessonTitle.contains('Presentazioni') ||
-                              lessonTitle.contains('Introductions'))
-                        ? const Icon(
-                            Icons.people,
-                            color: Colors.white,
-                            size: 30,
-                          )
-                        : Text(
-                            "${index + 1}",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                            ),
-                          ),
+                    child: _getLessonIcon(lessonTitle, index),
                   ),
                   title: Text(
                     lessonTitle,
@@ -199,6 +155,71 @@ class UnitLessonsScreen extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _getLessonIcon(String title, int index) {
+    // Helper per controllare se il titolo contiene parole chiave (case insensitive per sicurezza)
+    bool contains(String keyword) =>
+        title.toLowerCase().contains(keyword.toLowerCase());
+
+    IconData? iconData;
+
+    if (contains('Saluti') || contains('Greetings')) {
+      iconData = Icons.waving_hand;
+    } else if (contains('Cortesia') ||
+        contains('Cortesy') ||
+        contains('Courtesy')) {
+      iconData = Icons.handshake;
+    } else if (contains('Barriere') || contains('Barriers')) {
+      iconData = Icons.translate;
+    } else if (contains('Bisogni') || contains('Needs')) {
+      iconData = Icons.local_dining;
+    } else if (contains('Emergenze') || contains('Emergencies')) {
+      iconData = Icons.emergency;
+    } else if (contains('Presentazioni') || contains('Introductions')) {
+      iconData = Icons.people;
+    } else if (contains('Numeri') || contains('Numbers')) {
+      iconData = Icons.filter_1;
+    } else if (contains('Giorni') ||
+        contains('Days') ||
+        contains('Settimana') ||
+        contains('Week')) {
+      iconData = Icons.calendar_month;
+    } else if (contains('Momenti') || contains('Times')) {
+      iconData = Icons.access_time;
+    } else if (contains('Nucleo') ||
+        contains('Immediate Family') ||
+        contains('Famiglia') ||
+        contains('Family')) {
+      iconData = Icons.family_restroom;
+    } else if (contains('Amici') || contains('Friends')) {
+      iconData = Icons.group;
+    } else if (contains('Aggettivi') || contains('Adjectives')) {
+      iconData = Icons.auto_awesome;
+    } else if (contains('Professioni') || contains('Professions')) {
+      iconData = Icons.work;
+    } else if (contains('Bevande') || contains('Drinks')) {
+      iconData = Icons.local_cafe;
+    } else if (contains('Frutta') || contains('Fruit') || contains('Verdura')) {
+      iconData = Icons.eco;
+    } else if (contains('Ristorante') || contains('Restaurant')) {
+      iconData = Icons.restaurant;
+    } else if (contains('Cibi') || contains('Food')) {
+      iconData = Icons.dinner_dining;
+    }
+
+    if (iconData != null) {
+      return Icon(iconData, color: Colors.white, size: 30);
+    }
+
+    return Text(
+      "${index + 1}",
+      style: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontSize: 20,
       ),
     );
   }
