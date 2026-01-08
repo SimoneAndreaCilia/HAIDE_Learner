@@ -5,6 +5,9 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../widgets/animazione_scossa.dart';
 import '../providers/language_provider.dart';
+import 'package:flutter/services.dart'; // Per HapticFeedback
+import 'dart:ui'; // Per ImageFilter
+import 'package:lottie/lottie.dart'; // Per animazioni fluide vettoriali
 
 class QuizScreen extends StatefulWidget {
   final String titoloLezione;
@@ -245,34 +248,158 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
 
   void _mostraGameOver() {
     final l10n = AppLocalizations.of(context)!;
-    showDialog(
+
+    // Feedback tattile quando perdi (vibrazione leggera)
+    HapticFeedback.mediumImpact();
+
+    showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.heart_broken, color: Colors.red, size: 30),
-            const SizedBox(width: 10),
-            Text(l10n.gameOver),
-          ],
-        ),
-        content: Text(l10n.noLives),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).pop();
-            },
-            child: Text(
-              l10n.retry,
-              style: const TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+      barrierLabel: "GameOver",
+      barrierColor: Colors.black54, // Sfondo scuro semitrasparente
+      transitionDuration: const Duration(milliseconds: 500),
+      pageBuilder: (ctx, anim1, anim2) {
+        return const SizedBox(); // Non usato qui, usiamo transitionBuilder
+      },
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        // Curva elastica per l'effetto "BOING" all'entrata
+        final curvedValue = Curves.elasticOut.transform(anim1.value);
+
+        return Transform.scale(
+          scale: curvedValue,
+          child: Opacity(
+            opacity: anim1.value.clamp(0.0, 1.0),
+            child: _buildGameOverDialogContent(ctx, l10n),
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildGameOverDialogContent(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return BackdropFilter(
+      filter: ImageFilter.blur(
+        sigmaX: 5,
+        sigmaY: 5,
+      ), // Effetto sfocatura sfondo
+      child: Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        elevation: 16,
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.all(20),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 1. Animazione Lottie (Sostituisci con il tuo asset locale)
+              // Usa un url temporaneo o un asset locale 'assets/heart_broken.json'
+              SizedBox(
+                height: 150,
+                child: Lottie.asset(
+                  'animations/game_over.json',
+                  fit: BoxFit.contain,
+                  repeat:
+                      false, // L'animazione si ferma quando finisce la tristezza
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.heart_broken, size: 80, color: Colors.red),
+                        SizedBox(height: 8),
+                      ],
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 2. Titolo Grande e Giocoso
+              Text(
+                l10n.gameOver,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900, // Molto grassetto (stile gaming)
+                  color: Color(0xFF4B4B4B), // Grigio scuro morbido
+                  // fontFamily: 'Nunito', // Consiglio: usa un font arrotondato se disponibile
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // 3. Sottotitolo descrittivo
+              Text(
+                l10n.noLives, // "Hai finito le vite..."
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey[600],
+                  height: 1.4,
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // 4. Bottone "Chunky" (Bello grosso)
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    HapticFeedback.selectionClick(); // Click tattile
+                    Navigator.of(context).pop();
+                    Navigator.of(this.context).pop();
+                  },
+                  style:
+                      ElevatedButton.styleFrom(
+                        backgroundColor: const Color(
+                          0xFFFF4B4B,
+                        ), // Rosso Duolingo
+                        foregroundColor: Colors.white,
+                        elevation: 0, // Flat design ma con bordo sotto
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        // Simuliamo l'effetto 3D del bottone con un bordo inferiore
+                        side: const BorderSide(color: Colors.transparent),
+                      ).copyWith(
+                        // Trucco per effetto 3D (ombra solida sotto)
+                        shadowColor: WidgetStateProperty.all(
+                          Colors.red.shade900,
+                        ),
+                        elevation: WidgetStateProperty.resolveWith((states) {
+                          return states.contains(WidgetState.pressed) ? 0 : 6;
+                        }),
+                      ),
+                  child: Text(
+                    l10n.retry.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Opzionale: Bottone secondario "Esci"
+              // TextButton(
+              //   onPressed: () => Navigator.of(context).pop(),
+              //   child: Text(
+              //     "ESCI",
+              //     style: TextStyle(
+              //       color: Colors.grey[400],
+              //       fontWeight: FontWeight.bold
+              //     ),
+              //   ),
+              // )
+            ],
+          ),
+        ),
       ),
     );
   }
