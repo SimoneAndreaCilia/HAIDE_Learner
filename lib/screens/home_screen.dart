@@ -71,7 +71,7 @@ class HomeScreen extends StatelessWidget {
 
           return ListView.builder(
             padding: const EdgeInsets.all(20),
-            itemCount: documenti.length + 2,
+            itemCount: documenti.length + 5,
             itemBuilder: (context, index) {
               if (index == 0) {
                 return Card(
@@ -133,7 +133,9 @@ class HomeScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  color: isDark ? null : const Color(0xFFE8F5E9), // Light green
+                  color: isDark
+                      ? null
+                      : const Color.fromARGB(255, 210, 236, 212), // Light green
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(20),
                     leading: CircleAvatar(
@@ -170,6 +172,7 @@ class HomeScreen extends StatelessWidget {
                             description: isEnglish
                                 ? 'Essential phrases'
                                 : 'Frasi essenziali',
+                            topicColor: Colors.teal,
                           ),
                         ),
                       );
@@ -178,7 +181,175 @@ class HomeScreen extends StatelessWidget {
                 );
               }
 
-              final docIndex = index - 2; // Adjusted for 2 static cards
+              if (index == 2) {
+                return Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  color: isDark
+                      ? null
+                      : const Color.fromARGB(
+                          255,
+                          233,
+                          229,
+                          245,
+                        ), // Light purple
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(20),
+                    leading: CircleAvatar(
+                      backgroundColor: const Color.fromARGB(255, 5, 20, 236),
+                      radius: 30,
+                      child: const Icon(
+                        Icons.access_time,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    title: Text(
+                      isEnglish ? "Numbers and Time" : "Numeri e tempo",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    subtitle: Text(
+                      isEnglish
+                          ? "Learn to count and tell time"
+                          : "Impara a contare e dire l'ora",
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UnitLessonsScreen(
+                            unitId: 'unit_02_numbers_time',
+                            title: isEnglish
+                                ? 'Numbers and Time'
+                                : 'Numeri e tempo',
+                            description: isEnglish
+                                ? 'Numbers, days, months'
+                                : 'Numeri, giorni, mesi',
+                            topicColor: const Color.fromARGB(255, 5, 20, 236),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
+
+              if (index == 3) {
+                return Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  color: isDark ? null : const Color(0xFFFCE4EC), // Light pink
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(20),
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.pink,
+                      radius: 30,
+                      child: const Icon(
+                        Icons.family_restroom,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    title: Text(
+                      isEnglish ? "Family and People" : "Famiglia e Persone",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    subtitle: Text(
+                      isEnglish
+                          ? "Family members, friends, jobs and adjectives"
+                          : "Membri della famiglia, amici, professioni e aggettivi.",
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UnitLessonsScreen(
+                            unitId: 'unit_03_family',
+                            title: isEnglish
+                                ? 'Family and People'
+                                : 'Famiglia e Persone',
+                            description: isEnglish
+                                ? 'Family members'
+                                : 'Membri della famiglia',
+                            topicColor: Colors.pink,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
+
+              if (index == 4) {
+                return Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  color: isDark
+                      ? null
+                      : const Color(0xFFFFF3E0), // Light orange
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(20),
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.orange,
+                      radius: 30,
+                      child: const Icon(
+                        Icons.restaurant_menu,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    title: Text(
+                      isEnglish ? "Food & Restaurant" : "Cibo e Ristorante",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    subtitle: Text(
+                      isEnglish
+                          ? "Ordering food and dining out"
+                          : "Ordinare cibo e mangiare fuori",
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UnitLessonsScreen(
+                            unitId: 'unit_04_food',
+                            title: isEnglish
+                                ? 'Food & Restaurant'
+                                : 'Cibo e Ristorante',
+                            description: isEnglish
+                                ? 'Food vocabulary'
+                                : 'Vocabolario del cibo',
+                            topicColor: Colors.orange,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
+
+              final docIndex = index - 5; // Adjusted for 5 static cards
               final lezione =
                   documenti[docIndex].data() as Map<String, dynamic>;
 

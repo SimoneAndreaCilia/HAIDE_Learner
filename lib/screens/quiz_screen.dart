@@ -75,19 +75,20 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     _domande = widget.domande.map((domanda) {
       final nuovaDomanda = Map<String, dynamic>.from(domanda);
 
-      // Mischia opzioni italiane
-      if (nuovaDomanda['opzioni'] != null) {
-        final opzioni = List<String>.from(nuovaDomanda['opzioni']);
-        opzioni.shuffle();
-        nuovaDomanda['opzioni'] = opzioni;
+      // Helper per mischiare una lista se esiste
+      void shuffleList(String key) {
+        if (nuovaDomanda[key] != null && nuovaDomanda[key] is List) {
+          final list = List<String>.from(nuovaDomanda[key]);
+          list.shuffle();
+          nuovaDomanda[key] = list;
+        }
       }
 
-      // Mischia opzioni inglesi (se presenti)
-      if (nuovaDomanda['opzioni_en'] != null) {
-        final opzioniCm = List<String>.from(nuovaDomanda['opzioni_en']);
-        opzioniCm.shuffle();
-        nuovaDomanda['opzioni_en'] = opzioniCm;
-      }
+      // Mischia opzioni nuove e vecchie
+      shuffleList('opzioni');
+      shuffleList('opzioni_en');
+      shuffleList('options_it');
+      shuffleList('options_en');
 
       return nuovaDomanda;
     }).toList();
@@ -464,29 +465,45 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     final pronuncia = domandaCorrente['pronuncia'] ?? '';
 
     // Scelta opzioni in base alla lingua
-    List<String> opzioni;
-    if (isEnglish && domandaCorrente['opzioni_en'] != null) {
-      opzioni = List<String>.from(domandaCorrente['opzioni_en']);
+    List<String> opzioni = [];
+    if (isEnglish) {
+      if (domandaCorrente['options_en'] != null) {
+        opzioni = List<String>.from(domandaCorrente['options_en']);
+      } else if (domandaCorrente['opzioni_en'] != null) {
+        opzioni = List<String>.from(domandaCorrente['opzioni_en']);
+      } else {
+        // Fallback a italiano (nuovo o vecchio)
+        opzioni = List<String>.from(
+          domandaCorrente['options_it'] ?? domandaCorrente['opzioni'] ?? [],
+        );
+      }
     } else {
-      opzioni = List<String>.from(domandaCorrente['opzioni'] ?? []);
+      opzioni = List<String>.from(
+        domandaCorrente['options_it'] ?? domandaCorrente['opzioni'] ?? [],
+      );
     }
 
     // 2. Controllo se c'è un'immagine
-    final String? immagineUrl = domandaCorrente['immagine'];
+    final String? immagineUrl = domandaCorrente['imgUrl'];
 
     // 3. Determina la risposta corretta
     String rispostaCorretta;
     if (isEnglish) {
-      // Se inglese, usa il campo 'inglese', fallback su 'soluzione' o 'italiano' se mancasse (meglio evitare errori)
+      // Priorità chiavi inglesi poi fallback
       rispostaCorretta =
+          domandaCorrente['answer_en'] ??
           domandaCorrente['inglese'] ??
+          domandaCorrente['answer_it'] ??
           domandaCorrente['soluzione'] ??
           domandaCorrente['italiano'] ??
           '';
     } else {
-      // Se italiano
+      // Priorità chiavi italiane
       rispostaCorretta =
-          domandaCorrente['soluzione'] ?? domandaCorrente['italiano'] ?? '';
+          domandaCorrente['answer_it'] ??
+          domandaCorrente['soluzione'] ??
+          domandaCorrente['italiano'] ??
+          '';
     }
 
     // 4. Tipo di domanda (text, audio)
@@ -596,7 +613,11 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
 
                 return Text(
                   questionText,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 18),
+                  style: TextStyle(
+                    color: const Color.fromARGB(255, 155, 154, 154),
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                  ),
                   textAlign: TextAlign.center,
                 );
               },
