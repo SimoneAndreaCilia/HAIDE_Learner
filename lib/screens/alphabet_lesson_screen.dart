@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../services/database_service.dart';
 import 'quiz_screen.dart';
 
 class AlphabetLessonScreen extends StatefulWidget {
@@ -223,6 +224,12 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
                   // If completed (last page is the completion card)
                   if (idx == widget.letters.length) {
                     await prefs.setInt(key, widget.letters.length);
+                    // ADDED: Save to Firestore
+                    await DatabaseService().updateLessonProgress(
+                      widget.lessonId,
+                    );
+                    // ADDED: Save global 'alphabet' progress for Home Card
+                    await DatabaseService().updateLessonProgress('alphabet');
                   }
                 }
               },

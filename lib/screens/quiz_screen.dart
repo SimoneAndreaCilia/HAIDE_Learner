@@ -8,6 +8,8 @@ import '../providers/language_provider.dart';
 import 'package:flutter/services.dart'; // Per HapticFeedback
 import 'dart:ui'; // Per ImageFilter
 import 'package:lottie/lottie.dart'; // Per animazioni fluide vettoriali
+import '../providers/progress_provider.dart';
+import '../services/database_service.dart';
 
 class QuizScreen extends StatefulWidget {
   final String titoloLezione;
@@ -15,6 +17,11 @@ class QuizScreen extends StatefulWidget {
   final List<Map<String, dynamic>>?
   tips; // Aggiunto parametro opzionale per i tips
   final bool isCustomQuiz;
+  final String? heroTag;
+  final IconData? lessonIcon;
+  final Color? topicColor;
+  final String? unitId;
+  final String? lessonId;
 
   const QuizScreen({
     super.key,
@@ -22,6 +29,11 @@ class QuizScreen extends StatefulWidget {
     required this.domande,
     this.tips,
     this.isCustomQuiz = false,
+    this.heroTag,
+    this.lessonIcon,
+    this.topicColor,
+    this.unitId,
+    this.lessonId,
   });
 
   @override
@@ -300,7 +312,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               SizedBox(
                 height: 150,
                 child: Lottie.asset(
-                  'animations/game_over.json',
+                  'assets/animations/game_over.json',
                   fit: BoxFit.contain,
                   repeat:
                       false, // L'animazione si ferma quando finisce la tristezza
@@ -434,9 +446,27 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
             ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).pop(true);
+            onPressed: () async {
+              // Save progress if IDs are present
+              if (widget.unitId != null && widget.lessonId != null) {
+                // 2. Salva progresso locale (Shared Preferences)
+                Provider.of<ProgressProvider>(
+                  context,
+                  listen: false,
+                ).markLessonCompleted(widget.unitId!, widget.lessonId!);
+
+                // 3. Salva progresso Cloud (Firestore)
+                await DatabaseService().updateLessonProgress(
+                  widget.unitId!,
+                ); // Salvo usando unitId come topic (es. "unit_01_survival")
+              }
+
+              if (ctx.mounted) {
+                Navigator.of(ctx).pop();
+              }
+              if (mounted) {
+                Navigator.of(context).pop(true);
+              }
             },
             child: Text(l10n.continueBtn),
           ),
@@ -702,179 +732,227 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Barra Progresso
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: (_indiceDomanda + 1) / _domande.length,
-                minHeight: 15,
-                color: _vite > 1 ? const Color(0xFF58CC02) : Colors.orange,
-                backgroundColor: Colors.grey.shade200,
-              ),
-            ),
-            const Spacer(),
-
-            // Domanda: "Come si dice..." oppure "Cos'è questo?" oppure CUSTOM
-            Builder(
-              builder: (context) {
-                String questionText;
-                if (isEnglish) {
-                  questionText =
-                      domandaCorrente['text_question_en'] ??
-                      domandaCorrente['question_en'] ??
-                      domandaCorrente['question'] ??
-                      (immagineUrl != null ? l10n.whatIsThis : l10n.howToSay);
-                } else {
-                  questionText =
-                      domandaCorrente['text_question_it'] ??
-                      domandaCorrente['question_it'] ??
-                      domandaCorrente['question'] ??
-                      (immagineUrl != null ? l10n.whatIsThis : l10n.howToSay);
-                }
-
-                return Text(
-                  questionText,
-                  style: TextStyle(
-                    color: const Color.fromARGB(255, 155, 154, 154),
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                );
-              },
-            ),
-            const SizedBox(height: 20),
-
-            // --- AREA CENTRALE DINAMICA (Testo o Immagine) ---
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300, width: 2),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Column(
-                children: [
-                  // Se c'è l'immagine, mostrala.
-                  if (immagineUrl != null && immagineUrl.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.network(
-                        immagineUrl,
-                        height: 200,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const SizedBox(
-                            height: 200,
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) => Column(
-                          children: [
-                            const Icon(
-                              Icons.error,
-                              size: 50,
-                              color: Colors.red,
+      body: Container(
+        // Wrap body in Container for gradient/background
+        decoration: BoxDecoration(
+          gradient: widget.topicColor != null
+              ? LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    widget.topicColor!.withValues(alpha: 0.1),
+                    Theme.of(context).scaffoldBackgroundColor,
+                  ],
+                  stops: const [0.0, 0.3],
+                )
+              : null,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // HERO ANIMATION HEADER
+              if (widget.heroTag != null && widget.lessonIcon != null)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 20.0),
+                    child: Hero(
+                      tag: widget.heroTag!,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: widget.topicColor ?? Colors.blue,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (widget.topicColor ?? Colors.blue)
+                                  .withValues(alpha: 0.4),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
                             ),
-                            Text(l10n.imageError),
                           ],
                         ),
-                      ),
-                    )
-                  else if (!isAudioQuestion)
-                    // MOSTRIAMO IL TESTO SOLO SE NON È UNA DOMANDA AUDIO
-                    Text(
-                      parolaBulgara,
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  else
-                    // Placeholder per bilanciare l'altezza se è solo audio
-                    const SizedBox(height: 50),
-
-                  const SizedBox(height: 10),
-
-                  // Riga Audio e Pronuncia
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Se c'è l'immagine o È AUDIO, non mostriamo la pronuncia scritta
-                      if (immagineUrl == null && !isAudioQuestion)
-                        Text(
-                          pronuncia,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            color: Colors.blueGrey,
-                            fontStyle: FontStyle.italic,
-                          ),
+                        child: Icon(
+                          widget.lessonIcon,
+                          color: Colors.white,
+                          size: 40,
                         ),
-
-                      if (!isAudioQuestion && !widget.isCustomQuiz)
-                        const SizedBox(width: 10),
-
-                      // Bottone Audio logic:
-                      // 1. If isAudioQuestion -> Show BIG centered button (handled by UI above, essentially)
-                      // 2. If !isAudioQuestion AND isCustomQuiz -> HIDE BUTTON (user request)
-                      // 3. If !isAudioQuestion AND !isCustomQuiz -> Show Standard button
-                      if (isAudioQuestion || !widget.isCustomQuiz)
-                        Transform.scale(
-                          scale: isAudioQuestion ? 2.0 : 1.0,
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.volume_up,
-                              color: Colors.blue,
-                              size: 30,
-                            ),
-                            onPressed: _parlaCurrent,
-                          ),
-                        ),
-                    ],
-                  ),
-                  if (isAudioQuestion) const SizedBox(height: 40),
-                ],
-              ),
-            ),
-
-            const Spacer(),
-
-            // --- PULSANTI RISPOSTA ---
-            ...opzioni.map((opzione) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6.0),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.all(18),
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    surfaceTintColor: Colors.white,
-                    side: const BorderSide(color: Colors.grey, width: 2),
-                    elevation: 4,
-                    shadowColor: Colors.grey.shade400,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  onPressed: () => _verificaRisposta(opzione, rispostaCorretta),
-                  child: Text(
-                    opzione,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              );
-            }),
-            const SizedBox(height: 30),
-          ],
+
+              // Barra Progresso
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: (_indiceDomanda + 1) / _domande.length,
+                  minHeight: 15,
+                  color: _vite > 1 ? const Color(0xFF58CC02) : Colors.orange,
+                  backgroundColor: Colors.grey.shade200,
+                ),
+              ),
+              const Spacer(),
+
+              // Domanda: "Come si dice..." oppure "Cos'è questo?" oppure CUSTOM
+              Builder(
+                builder: (context) {
+                  String questionText;
+                  if (isEnglish) {
+                    questionText =
+                        domandaCorrente['text_question_en'] ??
+                        domandaCorrente['question_en'] ??
+                        domandaCorrente['question'] ??
+                        (immagineUrl != null ? l10n.whatIsThis : l10n.howToSay);
+                  } else {
+                    questionText =
+                        domandaCorrente['text_question_it'] ??
+                        domandaCorrente['question_it'] ??
+                        domandaCorrente['question'] ??
+                        (immagineUrl != null ? l10n.whatIsThis : l10n.howToSay);
+                  }
+
+                  return Text(
+                    questionText,
+                    style: TextStyle(
+                      color: const Color.fromARGB(255, 155, 154, 154),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // --- AREA CENTRALE DINAMICA (Testo o Immagine) ---
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300, width: 2),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Column(
+                  children: [
+                    // Se c'è l'immagine, mostrala.
+                    if (immagineUrl != null && immagineUrl.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          immagineUrl,
+                          height: 200,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const SizedBox(
+                              height: 200,
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => Column(
+                            children: [
+                              const Icon(
+                                Icons.error,
+                                size: 50,
+                                color: Colors.red,
+                              ),
+                              Text(l10n.imageError),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (!isAudioQuestion)
+                      // MOSTRIAMO IL TESTO SOLO SE NON È UNA DOMANDA AUDIO
+                      Text(
+                        parolaBulgara,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    else
+                      // Placeholder per bilanciare l'altezza se è solo audio
+                      const SizedBox(height: 50),
+
+                    const SizedBox(height: 10),
+
+                    // Riga Audio e Pronuncia
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Se c'è l'immagine o È AUDIO, non mostriamo la pronuncia scritta
+                        if (immagineUrl == null && !isAudioQuestion)
+                          Text(
+                            pronuncia,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.blueGrey,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+
+                        if (!isAudioQuestion && !widget.isCustomQuiz)
+                          const SizedBox(width: 10),
+
+                        // Bottone Audio logic:
+                        // 1. If isAudioQuestion -> Show BIG centered button (handled by UI above, essentially)
+                        // 2. If !isAudioQuestion AND isCustomQuiz -> HIDE BUTTON (user request)
+                        // 3. If !isAudioQuestion AND !isCustomQuiz -> Show Standard button
+                        if (isAudioQuestion || !widget.isCustomQuiz)
+                          Transform.scale(
+                            scale: isAudioQuestion ? 2.0 : 1.0,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.volume_up,
+                                color: Colors.blue,
+                                size: 30,
+                              ),
+                              onPressed: _parlaCurrent,
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (isAudioQuestion) const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+
+              const Spacer(),
+
+              // --- PULSANTI RISPOSTA ---
+              ...opzioni.map((opzione) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6.0),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.all(18),
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      surfaceTintColor: Colors.white,
+                      side: const BorderSide(color: Colors.grey, width: 2),
+                      elevation: 4,
+                      shadowColor: Colors.grey.shade400,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    onPressed: () =>
+                        _verificaRisposta(opzione, rispostaCorretta),
+                    child: Text(
+                      opzione,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );
