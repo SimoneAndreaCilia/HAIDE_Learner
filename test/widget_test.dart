@@ -8,10 +8,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:haide/main.dart';
-
-import 'package:provider/provider.dart';
 import 'package:haide/providers/language_provider.dart';
 import 'package:haide/providers/theme_provider.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   testWidgets('App starts smoke test', (WidgetTester tester) async {
