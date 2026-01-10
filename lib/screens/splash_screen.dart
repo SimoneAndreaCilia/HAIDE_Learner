@@ -20,6 +20,13 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this);
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _navigateToHome();
+      }
+    });
+
     _initializeFirebase();
   }
 
@@ -37,41 +44,30 @@ class _SplashScreenState extends State<SplashScreen>
     } catch (e) {
       debugPrint("Firebase initialization error: $e");
     } finally {
-      if (mounted) {
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            _navigateToHome();
-          }
-        });
-      }
+      // No manual future delayed here. We rely on the animation controller listener.
     }
   }
 
   void _navigateToHome() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 800),
+        // Durata: 600ms-800ms è il "sweet spot" per una dissolvenza elegante.
+        // Troppo veloce (200ms) sembra un glitch, troppo lenta (1s) annoia.
+        transitionDuration: const Duration(milliseconds: 700),
+
         pageBuilder: (context, animation, secondaryAnimation) =>
             const HomeScreen(),
+
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // Slide Home Screen from Bottom (Offset 0, 1) to Up (Offset 0, 0)
-          const begin = Offset(0.0, 1.0);
-          const end = Offset.zero;
-          const curve = Curves.easeInOut;
-
-          var tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-
-          // Optional: Slide Splash Screen Up as well?
-          // To strictly follow "pushed by", we can just slide the new page in.
-          // This gives the visual effect of the new page pushing the view.
-
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: child,
+          // Usiamo una curva "easeInOut" per rendere la dissolvenza
+          // morbida all'inizio e alla fine, invece che lineare.
+          var curve = Curves.easeInOut;
+          var curvedAnimation = CurvedAnimation(
+            parent: animation,
+            curve: curve,
           );
+
+          return FadeTransition(opacity: curvedAnimation, child: child);
         },
       ),
     );
@@ -93,8 +89,7 @@ class _SplashScreenState extends State<SplashScreen>
                   'assets/animations/splash_screen.json',
                   controller: _controller,
                   onLoaded: (composition) {
-                    // Speed up 1.5x
-                    // New Duration = Original / 1.5
+                    // Speed up 2x
                     _controller
                       ..duration = composition.duration * (1 / 2)
                       ..forward();
