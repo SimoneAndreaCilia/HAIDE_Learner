@@ -486,7 +486,8 @@ class _ProgressWrapperState extends State<_ProgressWrapper> {
   @override
   void initState() {
     super.initState();
-    if (widget.unitId != null) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (widget.unitId != null && user != null) {
       if (widget.unitId == 'alphabet') {
         _totalLessonsFuture = FirebaseFirestore.instance
             .collection('alphabet_lessons')

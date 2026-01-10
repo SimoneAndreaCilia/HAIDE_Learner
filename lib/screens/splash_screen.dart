@@ -51,9 +51,15 @@ class _SplashScreenState extends State<SplashScreen>
       await _signInSilently();
 
       // 2. Init User su Firestore
-      await _initializeUserInFirestore();
-
-      _isFirebaseInitialized = true;
+      if (FirebaseAuth.instance.currentUser != null) {
+        await _initializeUserInFirestore();
+        _isFirebaseInitialized = true;
+      } else {
+        debugPrint(
+          "❌ CRITICAL: Failed to auth anonymously. Stalling splash screen.",
+        );
+        // Optionally show retry button or error dialog here
+      }
     } catch (e) {
       debugPrint("Firebase initialization error: $e");
     } finally {
@@ -101,6 +107,10 @@ class _SplashScreenState extends State<SplashScreen>
         await userRef.update({'last_login': FieldValue.serverTimestamp()});
         debugPrint("Utente già esistente, bentornato.");
       }
+    } else {
+      debugPrint(
+        "⚠️ Critical: User is null after signInAnonymously. Skipping Firestore init.",
+      );
     }
   }
 
