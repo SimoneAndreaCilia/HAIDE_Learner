@@ -6,6 +6,7 @@ import 'l10n/generated/app_localizations.dart';
 import 'screens/splash_screen.dart';
 import 'providers/language_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/progress_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 void main() {
@@ -17,6 +18,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ProgressProvider()),
       ],
       child: const HaideApp(),
     ),

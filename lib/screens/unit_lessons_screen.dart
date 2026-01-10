@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../l10n/generated/app_localizations.dart';
 import 'quiz_screen.dart';
+import 'dart:math' as math;
 
 class UnitLessonsScreen extends StatelessWidget {
   final String unitId;
@@ -22,205 +23,406 @@ class UnitLessonsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEnglish = Localizations.localeOf(context).languageCode == 'en';
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(title, style: const TextStyle(color: Colors.white)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
-        backgroundColor: topicColor,
+        backgroundColor: topicColor.withValues(alpha: 0.9),
+        elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('courses')
-            .doc(unitId)
-            .collection('lessons')
-            .orderBy('order')
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+        ),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('courses')
+              .doc(unitId)
+              .collection('lessons')
+              .orderBy('order')
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final documents = snapshot.data!.docs;
+            final documents = snapshot.data!.docs;
 
-          if (documents.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.school_outlined,
-                    size: 64,
-                    color: Colors.grey,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.lessonEmpty, // Reusing existing string or "No lessons found"
-                    style: const TextStyle(color: Colors.grey, fontSize: 16),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(20),
-            itemCount: documents.length,
-            itemBuilder: (context, index) {
-              final lessonData =
-                  documents[index].data() as Map<String, dynamic>;
-
-              // Determine title based on language
-              String lessonTitle = lessonData['title'] ?? 'Lesson';
-              if (isEnglish && lessonData['title_en'] != null) {
-                lessonTitle = lessonData['title_en'];
-              }
-
-              // Determine description based on language
-              String lessonDesc = lessonData['description'] ?? '';
-              if (isEnglish && lessonData['description_en'] != null) {
-                lessonDesc = lessonData['description_en'];
-              }
-
-              final questions = List<Map<String, dynamic>>.from(
-                lessonData['questions'] ?? [],
-              );
-
-              return Card(
-                elevation: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(20),
-                  leading: CircleAvatar(
-                    backgroundColor: topicColor,
-                    radius: 30,
-                    child: _getLessonIcon(lessonTitle, index),
-                  ),
-                  title: Text(
-                    lessonTitle,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+            if (documents.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.school_outlined,
+                      size: 64,
+                      color: Colors.grey,
                     ),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (lessonDesc.isNotEmpty) ...[
-                        Text(lessonDesc),
-                        const SizedBox(height: 4),
-                      ],
-                      Text(
-                        l10n.questionsCount(questions.length),
-                        style: TextStyle(
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
-                          fontSize: 12,
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.lessonEmpty,
+                      style: const TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            const double itemHeight = 140.0;
+            const double amplitude = 70.0;
+            final double totalHeight = documents.length * itemHeight + 200;
+
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: SizedBox(
+                height: totalHeight,
+                width: size.width,
+                child: Stack(
+                  children: [
+                    // PERCORSO
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: LevelPathPainter(
+                          itemCount: documents.length,
+                          itemHeight: itemHeight,
+                          amplitude: amplitude,
+                          pathColor: isDark
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade300,
+                          isDark: isDark,
                         ),
                       ),
-                    ],
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    if (questions.isNotEmpty) {
-                      // Extract tips if available
-                      final tips = lessonData['tips'] != null
-                          ? List<Map<String, dynamic>>.from(lessonData['tips'])
-                          : null;
+                    ),
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => QuizScreen(
-                            titoloLezione: lessonTitle,
-                            domande: questions,
-                            tips: tips,
-                          ),
+                    // NODI
+                    ...List.generate(documents.length, (index) {
+                      final lessonData =
+                          documents[index].data() as Map<String, dynamic>;
+
+                      String lessonTitle = lessonData['title'] ?? 'Lesson';
+                      if (isEnglish && lessonData['title_en'] != null) {
+                        lessonTitle = lessonData['title_en'];
+                      }
+
+                      String lessonDesc = lessonData['description'] ?? '';
+                      if (isEnglish && lessonData['description_en'] != null) {
+                        lessonDesc = lessonData['description_en'];
+                      }
+
+                      final questions = List<Map<String, dynamic>>.from(
+                        lessonData['questions'] ?? [],
+                      );
+
+                      final double top = (index * itemHeight) + 120;
+
+                      final double left =
+                          (size.width / 2 - 40) +
+                          (amplitude * math.sin(index * 2.5));
+
+                      final iconData = _getLessonIconData(lessonTitle, index);
+                      final heroTag = 'lesson_icon_${unitId}_$index';
+
+                      return Positioned(
+                        top: top,
+                        left: left,
+                        child: _buildLessonNode(
+                          context,
+                          index,
+                          lessonTitle,
+                          lessonDesc,
+                          questions,
+                          topicColor,
+                          iconData,
+                          lessonData,
+                          l10n,
+                          heroTag,
+                          isDark,
+                          index % 2 == 0,
+                          documents[index].id,
                         ),
                       );
-                    } else {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(l10n.lessonEmpty)));
-                    }
-                  },
+                    }),
+                  ],
                 ),
-              );
-            },
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _getLessonIcon(String title, int index) {
-    // Helper per controllare se il titolo contiene parole chiave (case insensitive per sicurezza)
+  Widget _buildLessonNode(
+    BuildContext context,
+    int index,
+    String title,
+    String description,
+    List<Map<String, dynamic>> questions,
+    Color color,
+    IconData iconData,
+    Map<String, dynamic> lessonData,
+    AppLocalizations l10n,
+    String heroTag,
+    bool isDark,
+    bool isLeft,
+    String? lessonId,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        if (questions.isNotEmpty) {
+          final tips = lessonData['tips'] != null
+              ? List<Map<String, dynamic>>.from(lessonData['tips'])
+              : null;
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => QuizScreen(
+                titoloLezione: title,
+                domande: questions,
+                tips: tips,
+                heroTag: heroTag,
+                lessonIcon: iconData,
+                topicColor: color,
+                unitId: unitId,
+                lessonId: lessonId, // Use passed parameter
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.lessonEmpty)));
+        }
+      },
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 1.0),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    width: 4,
+                  ),
+                ),
+                child: Hero(
+                  tag: heroTag,
+                  child: Icon(iconData, color: Colors.white, size: 36),
+                ),
+              ),
+
+              Positioned(
+                top: 20,
+                left: isLeft ? 90 : -140,
+                child: Container(
+                  width: 130,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF303030) : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: isLeft ? TextAlign.start : TextAlign.end,
+                      ),
+                      if (description.isNotEmpty)
+                        Text(
+                          description,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: isLeft ? TextAlign.start : TextAlign.end,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getLessonIconData(String title, int index) {
     bool contains(String keyword) =>
         title.toLowerCase().contains(keyword.toLowerCase());
 
-    IconData? iconData;
-
     if (contains('Saluti') || contains('Greetings')) {
-      iconData = Icons.waving_hand;
-    } else if (contains('Cortesia') ||
-        contains('Cortesy') ||
-        contains('Courtesy')) {
-      iconData = Icons.handshake;
-    } else if (contains('Barriere') || contains('Barriers')) {
-      iconData = Icons.translate;
-    } else if (contains('Bisogni') || contains('Needs')) {
-      iconData = Icons.local_dining;
-    } else if (contains('Emergenze') || contains('Emergencies')) {
-      iconData = Icons.emergency;
-    } else if (contains('Presentazioni') || contains('Introductions')) {
-      iconData = Icons.people;
-    } else if (contains('Numeri') || contains('Numbers')) {
-      iconData = Icons.filter_1;
-    } else if (contains('Giorni') ||
+      return Icons.waving_hand;
+    }
+    if (contains('Cortesia') || contains('Cortesy') || contains('Courtesy')) {
+      return Icons.handshake;
+    }
+    if (contains('Barriere') || contains('Barriers')) {
+      return Icons.translate;
+    }
+    if (contains('Bisogni') || contains('Needs')) {
+      return Icons.local_dining;
+    }
+    if (contains('Emergenze') || contains('Emergencies')) {
+      return Icons.emergency;
+    }
+    if (contains('Presentazioni') || contains('Introductions')) {
+      return Icons.people;
+    }
+    if (contains('Numeri') || contains('Numbers')) {
+      return Icons.filter_1;
+    }
+    if (contains('Giorni') ||
         contains('Days') ||
         contains('Settimana') ||
         contains('Week')) {
-      iconData = Icons.calendar_month;
-    } else if (contains('Momenti') || contains('Times')) {
-      iconData = Icons.access_time;
-    } else if (contains('Nucleo') ||
+      return Icons.calendar_month;
+    }
+    if (contains('Momenti') || contains('Times')) {
+      return Icons.access_time;
+    }
+    if (contains('Nucleo') ||
         contains('Immediate Family') ||
         contains('Famiglia') ||
         contains('Family')) {
-      iconData = Icons.family_restroom;
-    } else if (contains('Amici') || contains('Friends')) {
-      iconData = Icons.group;
-    } else if (contains('Aggettivi') || contains('Adjectives')) {
-      iconData = Icons.auto_awesome;
-    } else if (contains('Professioni') || contains('Professions')) {
-      iconData = Icons.work;
-    } else if (contains('Bevande') || contains('Drinks')) {
-      iconData = Icons.local_cafe;
-    } else if (contains('Frutta') || contains('Fruit') || contains('Verdura')) {
-      iconData = Icons.eco;
-    } else if (contains('Ristorante') || contains('Restaurant')) {
-      iconData = Icons.restaurant;
-    } else if (contains('Cibi') || contains('Food')) {
-      iconData = Icons.dinner_dining;
+      return Icons.family_restroom;
+    }
+    if (contains('Amici') || contains('Friends')) {
+      return Icons.group;
+    }
+    if (contains('Aggettivi') || contains('Adjectives')) {
+      return Icons.auto_awesome;
+    }
+    if (contains('Professioni') || contains('Professions')) {
+      return Icons.work;
+    }
+    if (contains('Bevande') || contains('Drinks')) {
+      return Icons.local_cafe;
+    }
+    if (contains('Frutta') || contains('Fruit') || contains('Verdura')) {
+      return Icons.eco;
+    }
+    if (contains('Ristorante') || contains('Restaurant')) {
+      return Icons.restaurant;
+    }
+    if (contains('Cibi') || contains('Food')) {
+      return Icons.dinner_dining;
     }
 
-    if (iconData != null) {
-      return Icon(iconData, color: Colors.white, size: 30);
+    return Icons.star;
+  }
+}
+
+class LevelPathPainter extends CustomPainter {
+  final int itemCount;
+  final double itemHeight;
+  final double amplitude;
+  final Color pathColor;
+  final bool isDark;
+
+  LevelPathPainter({
+    required this.itemCount,
+    required this.itemHeight,
+    required this.amplitude,
+    required this.pathColor,
+    required this.isDark,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (itemCount <= 0) return;
+
+    final paint = Paint()
+      ..color = pathColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12.0
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+
+    final double startX = size.width / 2;
+    final double startY = 120 + 40;
+
+    path.moveTo(startX, startY);
+
+    for (int i = 0; i < itemCount - 1; i++) {
+      double nextY = ((i + 1) * itemHeight) + 120 + 40;
+      double nextXOffset = amplitude * math.sin((i + 1) * 2.5);
+      double nextX = (size.width / 2) + nextXOffset;
+
+      double currentY = ((i) * itemHeight) + 120 + 40;
+      double currentX = (size.width / 2) + (amplitude * math.sin(i * 2.5));
+
+      double cp1x = currentX;
+      double cp1y = currentY + (itemHeight / 2);
+
+      double cp2x = nextX;
+      double cp2y = nextY - (itemHeight / 2);
+
+      path.cubicTo(cp1x, cp1y, cp2x, cp2y, nextX, nextY);
     }
 
-    return Text(
-      "${index + 1}",
-      style: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-        fontSize: 20,
-      ),
-    );
+    canvas.drawPath(path, paint);
+
+    final borderPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth =
+          4.0 // Bordino interno
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawPath(path, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
   }
 }

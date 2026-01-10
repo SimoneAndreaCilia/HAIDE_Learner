@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lottie/lottie.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../firebase_options.dart';
@@ -15,6 +17,8 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _controller;
+  bool _isFirebaseInitialized = false;
+  bool _isAnimationCompleted = false;
 
   @override
   void initState() {
@@ -23,7 +27,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        _navigateToHome();
+        _isAnimationCompleted = true;
+        _tryNavigateToHome();
       }
     });
 
@@ -41,32 +46,82 @@ class _SplashScreenState extends State<SplashScreen>
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+
+      // 1. Auth Anonimo
+      await _signInSilently();
+
+      // 2. Init User su Firestore
+      await _initializeUserInFirestore();
+
+      _isFirebaseInitialized = true;
     } catch (e) {
       debugPrint("Firebase initialization error: $e");
     } finally {
-      // No manual future delayed here. We rely on the animation controller listener.
+      if (mounted) {
+        _tryNavigateToHome();
+      }
+    }
+  }
+
+  Future<void> _signInSilently() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      try {
+        await FirebaseAuth.instance.signInAnonymously();
+        debugPrint("Login anonimo effettuato!");
+      } catch (e) {
+        debugPrint("Errore login: $e");
+      }
+    } else {
+      debugPrint("Utente già loggato: ${user.uid}");
+    }
+  }
+
+  Future<void> _initializeUserInFirestore() async {
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      final userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
+
+      final docSnapshot = await userRef.get();
+
+      if (!docSnapshot.exists) {
+        await userRef.set({
+          'uid': user.uid,
+          'created_at': FieldValue.serverTimestamp(),
+          'is_anonymous': user.isAnonymous,
+          'hearts': 5,
+          'total_xp': 0,
+          'last_login': FieldValue.serverTimestamp(),
+        });
+        debugPrint("🎉 COLLEZIONE USERS CREATA AUTOMATICAMENTE!");
+      } else {
+        await userRef.update({'last_login': FieldValue.serverTimestamp()});
+        debugPrint("Utente già esistente, bentornato.");
+      }
+    }
+  }
+
+  void _tryNavigateToHome() {
+    if (_isFirebaseInitialized && _isAnimationCompleted) {
+      _navigateToHome();
     }
   }
 
   void _navigateToHome() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        // Durata: 600ms-800ms è il "sweet spot" per una dissolvenza elegante.
-        // Troppo veloce (200ms) sembra un glitch, troppo lenta (1s) annoia.
         transitionDuration: const Duration(milliseconds: 700),
-
         pageBuilder: (context, animation, secondaryAnimation) =>
             const HomeScreen(),
-
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // Usiamo una curva "easeInOut" per rendere la dissolvenza
-          // morbida all'inizio e alla fine, invece che lineare.
           var curve = Curves.easeInOut;
           var curvedAnimation = CurvedAnimation(
             parent: animation,
             curve: curve,
           );
-
           return FadeTransition(opacity: curvedAnimation, child: child);
         },
       ),
