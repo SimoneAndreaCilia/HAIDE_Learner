@@ -1,7 +1,7 @@
 # HAIDE_Learner 🇧🇬🐐
 
 <div align="center">
-  <img src="web/favicon.png" alt="HAIDE_Learner Logo" width="150" height="150">
+  <img src="img/logo.png" alt="HAIDE_Learner Logo" width="150" height="150">
   <br>
   <h3>Learn Bulgarian the fun way.</h3>
 </div>
