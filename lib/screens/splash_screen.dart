@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lottie/lottie.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../firebase_options.dart';
-import 'home_screen.dart';
+import 'main_nav_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -125,7 +125,7 @@ class _SplashScreenState extends State<SplashScreen>
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 700),
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomeScreen(),
+            const MainNavScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           var curve = Curves.easeInOut;
           var curvedAnimation = CurvedAnimation(
