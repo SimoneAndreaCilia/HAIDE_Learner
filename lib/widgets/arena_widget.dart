@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'gamified_progress_bar.dart';
 
 class ArenaWidget extends StatelessWidget {
   final String title;
@@ -83,7 +84,7 @@ class ArenaWidget extends StatelessWidget {
 
               // CENTRAL ARENA VISUAL
               Expanded(
-                flex: 6,
+                flex: 12, // More weight to the image
                 child: Center(
                   child: Stack(
                     alignment: Alignment.center,
@@ -139,71 +140,28 @@ class ArenaWidget extends StatelessWidget {
                 opacity: isZooming ? 0.0 : 1.0,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 20,
+                    horizontal: 30, // As suggested
+                    vertical: 8, // Reduced vertical padding
                   ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "MASTERY",
-                            style: GoogleFonts.nunito(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black54,
-                              fontSize: 12,
-                            ),
-                          ),
-                          Text(
-                            "${(progress * 100).toInt()}%",
-                            style: GoogleFonts.nunito(
-                              fontWeight: FontWeight.w900,
-                              color: primaryColor,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            backgroundColor: Colors.transparent,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              primaryColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: GamifiedProgressBar(
+                    value: progress,
+                    height: 28, // As suggested
+                    progressColor: primaryColor,
                   ),
                 ),
               ),
 
-              const Spacer(flex: 1),
-
+              const Spacer(
+                flex: 1,
+              ), // Keep this spacer for balance but reduced weight relative to arena
               // 3D ACTION BUTTON
               AnimatedOpacity(
                 duration: const Duration(milliseconds: 300),
                 opacity: isZooming ? 0.0 : 1.0,
                 child: Padding(
-                  padding: const EdgeInsets.only(bottom: 40),
+                  padding: const EdgeInsets.only(
+                    bottom: 5,
+                  ), // Reduced from 24 to 5
                   child: _Juicy3DButton(
                     label: actionLabel,
                     color: isLocked ? Colors.grey : primaryColor,
@@ -240,10 +198,9 @@ class _Juicy3DButtonState extends State<_Juicy3DButton> {
   @override
   Widget build(BuildContext context) {
     final bool isEnabled = widget.onPressed != null;
-    final baseColor = widget.color;
-    final shadowColor = HSLColor.fromColor(
-      baseColor,
-    ).withLightness(0.3).toColor();
+    // We use the color to determine if it's locked (grey) or active.
+    // If it's grey, we might want to show the image in greyscale or darker.
+    final bool isLocked = widget.color == Colors.grey;
 
     return GestureDetector(
       onTapDown: isEnabled ? (_) => setState(() => _isPressed = true) : null,
@@ -254,70 +211,94 @@ class _Juicy3DButtonState extends State<_Juicy3DButton> {
             }
           : null,
       onTapCancel: isEnabled ? () => setState(() => _isPressed = false) : null,
-      child: AnimatedContainer(
+      child: AnimatedScale(
+        scale: _isPressed ? 0.95 : 1.0,
         duration: const Duration(milliseconds: 100),
-        height: 70, // Fixed juicy height
-        width: 240,
-        margin: EdgeInsets.only(top: _isPressed ? 6 : 0),
-        decoration: BoxDecoration(
-          color: baseColor,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: _isPressed
-              ? []
-              : [
-                  BoxShadow(
-                    color: shadowColor,
-                    offset: const Offset(0, 6),
-                    blurRadius: 0,
+        child: SizedBox(
+          // Use nearly full screen width
+          width: MediaQuery.of(context).size.width * 0.60,
+          // Remove fixed height, let the image aspect ratio dictate height
+          // (assuming the image is the sizing anchor in the stack)
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // The Button Image
+              ColorFiltered(
+                colorFilter: isLocked
+                    ? const ColorFilter.mode(
+                        Colors.grey,
+                        BlendMode
+                            .modulate, // Use modulate or just matrix. Let's use matrix for true grayscale if saturation was the goal.
+                      )
+                    : const ColorFilter.mode(
+                        Colors.transparent,
+                        BlendMode.multiply,
+                      ),
+                child: isLocked
+                    ? ColorFiltered(
+                        colorFilter: const ColorFilter.matrix(<double>[
+                          0.2126,
+                          0.7152,
+                          0.0722,
+                          0,
+                          0,
+                          0.2126,
+                          0.7152,
+                          0.0722,
+                          0,
+                          0,
+                          0.2126,
+                          0.7152,
+                          0.0722,
+                          0,
+                          0,
+                          0,
+                          0,
+                          0,
+                          1,
+                          0,
+                        ]),
+                        child: Image.asset(
+                          'assets/images/bottone.png',
+                          fit: BoxFit.fitWidth,
+                          width: MediaQuery.of(context).size.width * 0.60,
+                        ),
+                      )
+                    : Image.asset(
+                        'assets/images/bottone.png',
+                        fit: BoxFit.fitWidth,
+                        width: MediaQuery.of(context).size.width * 0.60,
+                      ),
+              ),
+
+              // Text Label
+              Padding(
+                padding: const EdgeInsets.only(
+                  bottom: 10.0,
+                ), // Adjust for 3D depth of image if needed
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    widget.label.toUpperCase(),
+                    style: GoogleFonts.nunito(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize:
+                          30, // Even larger base size, but FittedBox will scale it down if needed
+                      letterSpacing: 1.5,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          offset: const Offset(0, 2),
+                          blurRadius: 3,
+                        ),
+                      ],
+                    ),
                   ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    offset: const Offset(0, 10),
-                    blurRadius: 10,
-                  ),
-                ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Top highlight/shine
-            Positioned(
-              top: 4,
-              left: 10,
-              right: 10,
-              height: 20,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white.withValues(alpha: 0.4),
-                      Colors.white.withValues(alpha: 0.1),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ),
-            // Text Label
-            Text(
-              widget.label.toUpperCase(),
-              style: GoogleFonts.nunito(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 24,
-                letterSpacing: 1.5,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    offset: const Offset(0, 2),
-                    blurRadius: 2,
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
