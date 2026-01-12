@@ -58,6 +58,10 @@ class _ArenaPageState extends State<ArenaPage> {
     // Add more arenas as needed
   ];
 
+  // Zoom state
+  bool _isZooming = false;
+  int _zoomingIndex = -1;
+
   @override
   void initState() {
     super.initState();
@@ -127,7 +131,9 @@ class _ArenaPageState extends State<ArenaPage> {
         controller: _pageController,
         itemCount: _arenas.length,
         scrollDirection: Axis.vertical,
-        physics: const BouncingScrollPhysics(),
+        physics: _isZooming
+            ? const NeverScrollableScrollPhysics() // Disable scroll while zooming
+            : const BouncingScrollPhysics(),
         itemBuilder: (context, index) {
           final arena = _arenas[index];
           return _buildArenaPage(context, arena, index);
@@ -150,12 +156,16 @@ class _ArenaPageState extends State<ArenaPage> {
           builder: (context, snapshot) {
             final locked = snapshot.data ?? (index > 0);
 
+            // Determine if this specific arena page is zooming
+            final isThisPageZooming = _isZooming && _zoomingIndex == index;
+
             return ArenaWidget(
               title: arena['title'],
               arenaImage: arena['image'],
               primaryColor: arena['color'],
               progress: progress,
               isLocked: locked,
+              isZooming: isThisPageZooming, // Pass the zooming state
               actionLabel: locked
                   ? (Provider.of<LanguageProvider>(
                               context,
@@ -171,7 +181,7 @@ class _ArenaPageState extends State<ArenaPage> {
                         : "Learn"),
               onMainAction: () {
                 if (!locked) {
-                  _navigateToUnit(context, arena);
+                  _startZoomAndNavigate(context, arena, index);
                 } else {
                   _showLockedDialog(context, arena);
                 }
@@ -190,25 +200,53 @@ class _ArenaPageState extends State<ArenaPage> {
     return prevProgress < 1.0;
   }
 
-  void _navigateToUnit(BuildContext context, Map<String, dynamic> arena) {
-    if (arena['id'] == 'alphabet') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AlphabetListScreen()),
-      ).then((_) => setState(() {}));
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => UnitLessonsScreen(
-            unitId: arena['id'],
-            title: arena['title'],
-            description: "Master this topic to advance!",
-            topicColor: arena['color'],
-          ),
-        ),
-      ).then((_) => setState(() {}));
+  void _startZoomAndNavigate(
+    BuildContext context,
+    Map<String, dynamic> arena,
+    int index,
+  ) async {
+    setState(() {
+      _isZooming = true;
+      _zoomingIndex = index;
+    });
+
+    // Wait for the scale animation to complete (approx match the duration in ArenaWidget)
+    await Future.delayed(const Duration(milliseconds: 700));
+
+    if (!context.mounted) return;
+
+    // Navigate with a Fade transition to feel like we are "inside"
+    await Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return FadeTransition(
+            opacity: animation,
+            child: arena['id'] == 'alphabet'
+                ? const AlphabetListScreen()
+                : UnitLessonsScreen(
+                    unitId: arena['id'],
+                    title: arena['title'],
+                    description: "Master this topic to advance!",
+                    topicColor: arena['color'],
+                  ),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 600),
+      ),
+    );
+
+    // Reset state when coming back
+    if (mounted) {
+      setState(() {
+        _isZooming = false;
+        _zoomingIndex = -1;
+      });
     }
+  }
+
+  // Old navigate method replaced by _startZoomAndNavigate, keeping this if needed for other calls but unused now for main action
+  void _navigateToUnit(BuildContext context, Map<String, dynamic> arena) {
+    // ... (Previous logic refactored into _startZoomAndNavigate)
   }
 
   void _showLockedDialog(BuildContext context, Map<String, dynamic> arena) {
