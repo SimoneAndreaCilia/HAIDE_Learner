@@ -7,6 +7,7 @@ import '../providers/language_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'alphabet_list_screen.dart';
 import 'unit_lessons_screen.dart';
+import '../widgets/animated_sky_background.dart';
 
 class ArenaPage extends StatefulWidget {
   const ArenaPage({super.key});
@@ -127,17 +128,25 @@ class _ArenaPageState extends State<ArenaPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PageView.builder(
-        controller: _pageController,
-        itemCount: _arenas.length,
-        scrollDirection: Axis.vertical,
-        physics: _isZooming
-            ? const NeverScrollableScrollPhysics() // Disable scroll while zooming
-            : const BouncingScrollPhysics(),
-        itemBuilder: (context, index) {
-          final arena = _arenas[index];
-          return _buildArenaPage(context, arena, index);
-        },
+      body: Stack(
+        children: [
+          // Alive Animated Background
+          const Positioned.fill(child: AnimatedSkyBackground()),
+
+          // Arena Content
+          PageView.builder(
+            controller: _pageController,
+            itemCount: _arenas.length,
+            scrollDirection: Axis.vertical,
+            physics: _isZooming
+                ? const NeverScrollableScrollPhysics() // Disable scroll while zooming
+                : const BouncingScrollPhysics(),
+            itemBuilder: (context, index) {
+              final arena = _arenas[index];
+              return _buildArenaPage(context, arena, index);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -245,8 +254,12 @@ class _ArenaPageState extends State<ArenaPage> {
   }
 
   // Old navigate method replaced by _startZoomAndNavigate, keeping this if needed for other calls but unused now for main action
+  // Old navigate method replaced by _startZoomAndNavigate, keeping this if needed for other calls but unused now for main action
   void _navigateToUnit(BuildContext context, Map<String, dynamic> arena) {
-    // ... (Previous logic refactored into _startZoomAndNavigate)
+    final index = _arenas.indexWhere((element) => element['id'] == arena['id']);
+    if (index != -1) {
+      _startZoomAndNavigate(context, arena, index);
+    }
   }
 
   void _showLockedDialog(BuildContext context, Map<String, dynamic> arena) {
@@ -254,10 +267,10 @@ class _ArenaPageState extends State<ArenaPage> {
       context: context,
       barrierDismissible: true,
       barrierLabel: "Dismiss",
-      pageBuilder: (context, anim1, anim2) {
+      pageBuilder: (dialogContext, anim1, anim2) {
         final isIt =
             Provider.of<LanguageProvider>(
-              context,
+              dialogContext,
               listen: false,
             ).currentLocale.languageCode ==
             'it';
@@ -321,7 +334,7 @@ class _ArenaPageState extends State<ArenaPage> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () => Navigator.of(dialogContext).pop(),
                         child: Text(
                           "OK",
                           style: GoogleFonts.nunito(
@@ -335,7 +348,8 @@ class _ArenaPageState extends State<ArenaPage> {
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).pop();
+                        Navigator.of(dialogContext).pop();
+                        // Use the outer 'context' (ArenaPage context) here, NOT dialogContext
                         _navigateToUnit(context, arena);
                       },
                       child: Text(
