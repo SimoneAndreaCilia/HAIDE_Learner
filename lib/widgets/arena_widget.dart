@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'gamified_progress_bar.dart';
+import 'gamified_bridge_map.dart';
 
 class ArenaWidget extends StatelessWidget {
   final String title;
@@ -91,8 +91,8 @@ class ArenaWidget extends StatelessWidget {
                     children: [
                       // Glow effect behind
                       AnimatedScale(
-                        duration: const Duration(milliseconds: 800),
-                        curve: Curves.easeInExpo,
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeIn,
                         scale: isZooming ? 15.0 : 1.0,
                         child: Container(
                           width: 500, // SUPER Maximized size
@@ -111,8 +111,8 @@ class ArenaWidget extends StatelessWidget {
                       ),
                       // The Arena Image
                       AnimatedScale(
-                        duration: const Duration(milliseconds: 800),
-                        curve: Curves.easeInExpo,
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeIn,
                         scale: isZooming ? 20.0 : 1.0,
                         child: Image.asset(
                           arenaImage,
@@ -143,10 +143,9 @@ class ArenaWidget extends StatelessWidget {
                     horizontal: 30, // As suggested
                     vertical: 8, // Reduced vertical padding
                   ),
-                  child: GamifiedProgressBar(
-                    value: progress,
-                    height: 28, // As suggested
-                    progressColor: primaryColor,
+                  child: GamifiedBridgeMap(
+                    progress: progress,
+                    trailColor: primaryColor,
                   ),
                 ),
               ),

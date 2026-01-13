@@ -220,7 +220,7 @@ class _ArenaPageState extends State<ArenaPage> {
     });
 
     // Wait for the scale animation to complete (approx match the duration in ArenaWidget)
-    await Future.delayed(const Duration(milliseconds: 700));
+    await Future.delayed(const Duration(milliseconds: 300));
 
     if (!context.mounted) return;
 
