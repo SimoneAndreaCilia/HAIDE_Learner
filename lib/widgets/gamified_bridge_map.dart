@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui'; // Per PathMetrics
+import 'package:google_fonts/google_fonts.dart';
 
 class GamifiedBridgeMap extends StatefulWidget {
   final double progress; // Valore da 0.0 a 1.0 (es. 0.2 per 20%)
@@ -101,9 +102,9 @@ class _GamifiedBridgeMapState extends State<GamifiedBridgeMap>
               ),
 
               // 3. I CARTIGLI (Mastery e %)
-              //Positioned(top: 0, left: 10, child: _buildScrollLabel("MASTERY")),
+              Positioned(top: -10, left: 10, child: _buildScrollLabel("ПЪТ")),
               Positioned(
-                top: 0,
+                top: -10,
                 right: 10,
                 child: _buildScrollLabel("${(widget.progress * 100).toInt()}%"),
               ),
@@ -170,10 +171,10 @@ class _GamifiedBridgeMapState extends State<GamifiedBridgeMap>
       ),
       child: Text(
         text,
-        style: const TextStyle(
+        style: GoogleFonts.nunito(
           fontWeight: FontWeight.w900,
           color: Colors.brown,
-          fontSize: 12,
+          fontSize: 14,
         ),
       ),
     );
