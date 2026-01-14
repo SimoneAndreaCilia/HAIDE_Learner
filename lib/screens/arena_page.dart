@@ -13,11 +13,21 @@ class ArenaPage extends StatefulWidget {
   const ArenaPage({super.key});
 
   @override
-  State<ArenaPage> createState() => _ArenaPageState();
+  State<ArenaPage> createState() => ArenaPageState();
 }
 
-class _ArenaPageState extends State<ArenaPage> {
+class ArenaPageState extends State<ArenaPage> {
   final PageController _pageController = PageController(viewportFraction: 1.0);
+
+  void goToPage(int index) {
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+  }
 
   // Define Arenas Data
   final List<Map<String, dynamic>> _arenas = [
