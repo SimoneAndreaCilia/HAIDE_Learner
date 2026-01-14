@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'arena_page.dart';
 import 'profile_settings.dart';
+import 'home_screen.dart'; // Import HomeScreen
+import '../widgets/gamified_nav_bar.dart';
 
 class MainNavScreen extends StatefulWidget {
   const MainNavScreen({super.key});
@@ -10,37 +13,34 @@ class MainNavScreen extends StatefulWidget {
 }
 
 class _MainNavScreenState extends State<MainNavScreen> {
-  int _currentIndex = 0;
+  int _currentIndex = 0; // Start at Home (Gioca/Arena)
 
-  final List<Widget> _screens = [const ArenaPage(), const ProfileScreen()];
+  // List of pages to display
+  final List<Widget> _pages = [
+    const ArenaPage(), // 0: Arene
+    const HomeScreen(), // 1: Gioca (Home)
+    const ProfileScreen(), // 2: Profilo
+  ];
+
+  void _onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        indicatorColor: Colors.orange,
-        elevation: 3,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.videogame_asset_outlined),
-            selectedIcon: Icon(Icons.videogame_asset_rounded),
-            label: 'Arena',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
+      extendBody: true, // Extend body behind the floating bar
+      backgroundColor: Colors.lightBlue[50], // General background (fallback)
+
+      body: Stack(
+        children: [
+          // 1. PAGE CONTENT
+          IndexedStack(index: _currentIndex, children: _pages),
+
+          // 2. FLOATING NAVIGATION BAR
+          GamifiedNavBar(currentIndex: _currentIndex, onTap: _onTabTapped),
         ],
       ),
     );

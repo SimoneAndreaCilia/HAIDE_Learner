@@ -102,7 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.orange,
+                                color: const Color(0xFF5C6BC0),
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: Colors.white,
@@ -194,19 +194,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _buildSettingTile(
                           icon: Icons.dark_mode,
-                          color: Colors.orange,
+                          color: isDark ? Colors.white : Colors.black,
                           title: "Dark Mode",
                           isDark: isDark,
                           trailing: Switch(
                             value: isDark,
-                            activeThumbColor: Colors.orange,
+                            activeThumbColor: const Color(0xFF5C6BC0),
                             onChanged: (val) => themeProvider.toggleTheme(val),
                           ),
                         ),
                         const Divider(),
                         _buildSettingTile(
                           icon: Icons.language,
-                          color: Colors.orange,
+                          color: isDark ? Colors.white : Colors.black,
                           title: isEnglish ? "Language" : "Lingua",
                           isDark: isDark,
                           trailing: Container(
@@ -314,14 +314,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     VoidCallback? onTap,
   }) {
     return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: color),
-      ),
+      leading: Icon(icon, color: color, size: 28),
       title: Text(
         title,
         style: GoogleFonts.nunito(

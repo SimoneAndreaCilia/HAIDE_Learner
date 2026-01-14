@@ -4,10 +4,9 @@ import 'gamified_bridge_map.dart';
 
 class ArenaWidget extends StatelessWidget {
   final String title;
-  final String arenaImage; // Path to asset
-  final Color
-  primaryColor; // Defines the theme of the arena (e.g. Green for Survival)
-  final double progress; // 0.0 to 1.0
+  final String arenaImage;
+  final Color primaryColor;
+  final double progress;
   final bool isLocked;
   final VoidCallback onMainAction;
   final String actionLabel;
@@ -20,7 +19,7 @@ class ArenaWidget extends StatelessWidget {
     required this.primaryColor,
     required this.progress,
     required this.onMainAction,
-    this.actionLabel = "LEARN",
+    this.actionLabel = "IMPARA", // Default a IMPARA
     this.isLocked = false,
     this.isZooming = false,
   });
@@ -29,29 +28,22 @@ class ArenaWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // 1. Tiled Background Pattern
-        // 1. Tiled Background Pattern (DISABLED)
-        // Positioned.fill(
-        //   child: Image.asset(
-        //     'assets/images/shevitsa_pattern.png',
-        //     repeat: ImageRepeat.repeat,
-        //     color: Colors.black.withValues(
-        //       alpha: 0.05,
-        //     ), // Subtle overlay to blend
-        //     colorBlendMode: BlendMode.darken,
-        //   ),
-        // ),
+        // 1. Sfondo (Opzionale)
+        // Positioned.fill(...),
 
-        // 2. Main Content
+        // 2. Contenuto Principale
         SafeArea(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Arena Title (Floating Header)
+              // --- TITOLO ARENA ---
               AnimatedOpacity(
                 duration: const Duration(milliseconds: 300),
                 opacity: isZooming ? 0.0 : 1.0,
                 child: Container(
+                  margin: const EdgeInsets.only(
+                    top: 10,
+                  ), // Un po' di margine dal top
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 8,
@@ -82,34 +74,34 @@ class ArenaWidget extends StatelessWidget {
 
               const Spacer(flex: 1),
 
-              // CENTRAL ARENA VISUAL
+              // --- VISUAL CENTRALE (ISOLA) ---
               Expanded(
-                flex: 12, // More weight to the image
+                flex: 10, // Bilanciato per lasciare spazio
                 child: Center(
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Glow effect behind
+                      // Glow effect
                       AnimatedScale(
                         duration: const Duration(milliseconds: 600),
                         curve: Curves.easeIn,
                         scale: isZooming ? 15.0 : 1.0,
                         child: Container(
-                          width: 500, // SUPER Maximized size
+                          width: 500,
                           height: 500,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
                                 color: primaryColor.withValues(alpha: 0.6),
-                                blurRadius: 80, // Larger blur
+                                blurRadius: 80,
                                 spreadRadius: 20,
                               ),
                             ],
                           ),
                         ),
                       ),
-                      // The Arena Image
+                      // Immagine Arena
                       AnimatedScale(
                         duration: const Duration(milliseconds: 600),
                         curve: Curves.easeIn,
@@ -117,15 +109,23 @@ class ArenaWidget extends StatelessWidget {
                         child: Image.asset(
                           arenaImage,
                           fit: BoxFit.contain,
-                          width: 650,
+                          width:
+                              MediaQuery.of(context).size.width *
+                              0.9, // Adatta larghezza
                         ),
-                      ), // SUPER Maximized width
+                      ),
                       if (isLocked)
                         Container(
-                          color: Colors.black45,
+                          width: 120, // Explicitly constrain size
+                          height: 120,
+                          padding: const EdgeInsets.all(20),
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
                           child: const Icon(
                             Icons.lock_rounded,
-                            size: 80,
+                            size: 60,
                             color: Colors.white70,
                           ),
                         ),
@@ -134,14 +134,14 @@ class ArenaWidget extends StatelessWidget {
                 ),
               ),
 
-              // PROGRESS BAR (Juicy)
+              // --- PROGRESS BAR ---
               AnimatedOpacity(
                 duration: const Duration(milliseconds: 300),
                 opacity: isZooming ? 0.0 : 1.0,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 30, // As suggested
-                    vertical: 8, // Reduced vertical padding
+                    horizontal: 20,
+                    vertical: 8,
                   ),
                   child: GamifiedBridgeMap(
                     progress: progress,
@@ -150,17 +150,12 @@ class ArenaWidget extends StatelessWidget {
                 ),
               ),
 
-              const Spacer(
-                flex: 1,
-              ), // Keep this spacer for balance but reduced weight relative to arena
-              // 3D ACTION BUTTON
+              // --- BOTTONE 3D ---
               AnimatedOpacity(
                 duration: const Duration(milliseconds: 300),
                 opacity: isZooming ? 0.0 : 1.0,
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                    bottom: 5,
-                  ), // Reduced from 24 to 5
+                  padding: const EdgeInsets.only(bottom: 10),
                   child: _Juicy3DButton(
                     label: actionLabel,
                     color: isLocked ? Colors.grey : primaryColor,
@@ -168,6 +163,9 @@ class ArenaWidget extends StatelessWidget {
                   ),
                 ),
               ),
+
+              // --- SPAZIO PER LA NAVBAR ---
+              const SizedBox(height: 110),
             ],
           ),
         ),
@@ -176,6 +174,7 @@ class ArenaWidget extends StatelessWidget {
   }
 }
 
+// --- WIDGET BOTTONE MIGLIORATO ---
 class _Juicy3DButton extends StatefulWidget {
   final String label;
   final Color color;
@@ -197,8 +196,6 @@ class _Juicy3DButtonState extends State<_Juicy3DButton> {
   @override
   Widget build(BuildContext context) {
     final bool isEnabled = widget.onPressed != null;
-    // We use the color to determine if it's locked (grey) or active.
-    // If it's grey, we might want to show the image in greyscale or darker.
     final bool isLocked = widget.color == Colors.grey;
 
     return GestureDetector(
@@ -214,25 +211,13 @@ class _Juicy3DButtonState extends State<_Juicy3DButton> {
         scale: _isPressed ? 0.95 : 1.0,
         duration: const Duration(milliseconds: 100),
         child: SizedBox(
-          // Use nearly full screen width
-          width: MediaQuery.of(context).size.width * 0.60,
-          // Remove fixed height, let the image aspect ratio dictate height
-          // (assuming the image is the sizing anchor in the stack)
+          width: MediaQuery.of(context).size.width * 0.65, // Larghezza bottone
+          height: 80, // Altezza fissa per stabilità
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // The Button Image
-              ColorFiltered(
-                colorFilter: isLocked
-                    ? const ColorFilter.mode(
-                        Colors.grey,
-                        BlendMode
-                            .modulate, // Use modulate or just matrix. Let's use matrix for true grayscale if saturation was the goal.
-                      )
-                    : const ColorFilter.mode(
-                        Colors.transparent,
-                        BlendMode.multiply,
-                      ),
+              // 1. Immagine Bottone (Senza Scritta)
+              Positioned.fill(
                 child: isLocked
                     ? ColorFiltered(
                         colorFilter: const ColorFilter.matrix(<double>[
@@ -259,40 +244,26 @@ class _Juicy3DButtonState extends State<_Juicy3DButton> {
                         ]),
                         child: Image.asset(
                           'assets/images/bottone.png',
-                          fit: BoxFit.fitWidth,
-                          width: MediaQuery.of(context).size.width * 0.60,
+                          fit: BoxFit.contain,
                         ),
                       )
                     : Image.asset(
                         'assets/images/bottone.png',
-                        fit: BoxFit.fitWidth,
-                        width: MediaQuery.of(context).size.width * 0.60,
+                        fit: BoxFit.contain,
                       ),
               ),
 
-              // Text Label
+              // 2. Testo con Bordo (Stroke) per effetto Cartoon
+              // Spostato leggermente in su (padding bottom) per stare sulla "faccia" del bottone
               Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 10.0,
-                ), // Adjust for 3D depth of image if needed
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    widget.label.toUpperCase(),
-                    style: GoogleFonts.nunito(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize:
-                          30, // Even larger base size, but FittedBox will scale it down if needed
-                      letterSpacing: 1.5,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          offset: const Offset(0, 2),
-                          blurRadius: 3,
-                        ),
-                      ],
-                    ),
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: Text(
+                  widget.label.toUpperCase(),
+                  style: GoogleFonts.nunito(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                    color: Colors.white,
                   ),
                 ),
               ),
