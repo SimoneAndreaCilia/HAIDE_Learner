@@ -254,7 +254,6 @@ class _ArenaPageState extends State<ArenaPage> {
   }
 
   // Old navigate method replaced by _startZoomAndNavigate, keeping this if needed for other calls but unused now for main action
-  // Old navigate method replaced by _startZoomAndNavigate, keeping this if needed for other calls but unused now for main action
   void _navigateToUnit(BuildContext context, Map<String, dynamic> arena) {
     final index = _arenas.indexWhere((element) => element['id'] == arena['id']);
     if (index != -1) {
