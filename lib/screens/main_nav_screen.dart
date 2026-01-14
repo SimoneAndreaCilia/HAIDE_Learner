@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'arena_page.dart';
 import 'profile_settings.dart';
-import 'home_screen.dart'; // Import HomeScreen
+import 'arenas_list_screen.dart'; // Import ArenasListScreen
 import '../widgets/gamified_nav_bar.dart';
 
 class MainNavScreen extends StatefulWidget {
@@ -16,11 +16,31 @@ class _MainNavScreenState extends State<MainNavScreen> {
   int _currentIndex = 0; // Start at Home (Gioca/Arena)
 
   // List of pages to display
-  final List<Widget> _pages = [
-    const ArenaPage(), // 0: Arene
-    const HomeScreen(), // 1: Gioca (Home)
-    const ProfileScreen(), // 2: Profilo
-  ];
+  final GlobalKey<ArenaPageState> _arenaKey = GlobalKey<ArenaPageState>();
+
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      ArenaPage(key: _arenaKey), // 0: Arene (Swipe)
+      ArenasListScreen(
+        onArenaSelected: (index) {
+          // Switch to tab 0
+          setState(() {
+            _currentIndex = 0;
+          });
+          // Scroll to the selected arena
+          // Using a post-frame callback to ensure the widget is built if we just switched tabs
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _arenaKey.currentState?.goToPage(index);
+          });
+        },
+      ), // 1: Arene (Lista)
+      const ProfileScreen(), // 2: Profilo
+    ];
+  }
 
   void _onTabTapped(int index) {
     setState(() {
