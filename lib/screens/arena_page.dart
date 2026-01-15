@@ -16,8 +16,12 @@ class ArenaPage extends StatefulWidget {
   State<ArenaPage> createState() => ArenaPageState();
 }
 
-class ArenaPageState extends State<ArenaPage> {
+class ArenaPageState extends State<ArenaPage>
+    with AutomaticKeepAliveClientMixin {
   final PageController _pageController = PageController(viewportFraction: 1.0);
+
+  @override
+  bool get wantKeepAlive => true;
 
   void goToPage(int index) {
     if (_pageController.hasClients) {
@@ -26,6 +30,14 @@ class ArenaPageState extends State<ArenaPage> {
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOutCubic,
       );
+    } else {
+      // If clients are not ready yet (e.g. first build),
+      // schedule the jump for after the build.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(index);
+        }
+      });
     }
   }
 
@@ -137,6 +149,7 @@ class ArenaPageState extends State<ArenaPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       body: Stack(
         children: [

@@ -38,7 +38,8 @@ class ArenasListScreen extends StatefulWidget {
   State<ArenasListScreen> createState() => _ArenasListScreenState();
 }
 
-class _ArenasListScreenState extends State<ArenasListScreen> {
+class _ArenasListScreenState extends State<ArenasListScreen>
+    with AutomaticKeepAliveClientMixin {
   // Define base data with translations
   final List<Map<String, dynamic>> _arenasBase = [
     {
@@ -185,7 +186,11 @@ class _ArenasListScreenState extends State<ArenasListScreen> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isIt = languageProvider.currentLocale.languageCode == 'it';
 

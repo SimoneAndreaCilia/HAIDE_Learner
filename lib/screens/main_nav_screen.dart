@@ -13,38 +13,91 @@ class MainNavScreen extends StatefulWidget {
 }
 
 class _MainNavScreenState extends State<MainNavScreen> {
-  int _currentIndex = 0; // Start at Home (Gioca/Arena)
+  // PageView Controller
+  // Start at index 1 (Play/Gioca) which corresponds to Nav Index 0
+  final PageController _pageController = PageController(initialPage: 1);
 
-  // List of pages to display
+  // We need to keep track of the Nav Bar index separately to update the UI
+  int _currentNavIndex = 0; // 0 = Play (Gioca)
+
+  // List of pages to display in Visual Order (Left -> Right)
+  // Page 0: Arene
+  // Page 1: Gioca (Center)
+  // Page 2: Profilo
   final GlobalKey<ArenaPageState> _arenaKey = GlobalKey<ArenaPageState>();
-
   late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     _pages = [
-      ArenaPage(key: _arenaKey), // 0: Arene (Swipe)
       ArenasListScreen(
         onArenaSelected: (index) {
-          // Switch to tab 0
-          setState(() {
-            _currentIndex = 0;
-          });
+          // Navigate to "Gioca" (Page 1)
+          _pageController.animateToPage(
+            1,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
           // Scroll to the selected arena
-          // Using a post-frame callback to ensure the widget is built if we just switched tabs
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _arenaKey.currentState?.goToPage(index);
           });
         },
-      ), // 1: Arene (Lista)
-      const ProfileScreen(), // 2: Profilo
+      ), // Page 0: Arene
+      ArenaPage(key: _arenaKey), // Page 1: Gioca
+      const ProfileScreen(), // Page 2: Profilo
     ];
   }
 
-  void _onTabTapped(int index) {
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  // Map Nav Bar Index (0=Play, 1=Arenas, 2=Profile) to PageView Index (0=Arenas, 1=Play, 2=Profile)
+  int _navIndexToPage(int navIndex) {
+    switch (navIndex) {
+      case 0:
+        return 1; // Play -> Center Page
+      case 1:
+        return 0; // Arenas -> Left Page
+      case 2:
+        return 2; // Profile -> Right Page
+      default:
+        return 1;
+    }
+  }
+
+  // Map PageView Index to Nav Bar Index
+  int _pageToNavIndex(int pageIndex) {
+    switch (pageIndex) {
+      case 0:
+        return 1; // Left Page -> Arenas
+      case 1:
+        return 0; // Center Page -> Play
+      case 2:
+        return 2; // Right Page -> Profile
+      default:
+        return 0;
+    }
+  }
+
+  void _onTabTapped(int navIndex) {
+    // When Nav Bar is tapped, animate PageView to corresponding page
+    final pageIndex = _navIndexToPage(navIndex);
+    _pageController.animateToPage(
+      pageIndex,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _onPageChanged(int pageIndex) {
+    // When PageView is swiped, update Nav Bar state
     setState(() {
-      _currentIndex = index;
+      _currentNavIndex = _pageToNavIndex(pageIndex);
     });
   }
 
@@ -52,15 +105,19 @@ class _MainNavScreenState extends State<MainNavScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true, // Extend body behind the floating bar
-      backgroundColor: Colors.lightBlue[50], // General background (fallback)
-
+      backgroundColor: Colors.lightBlue[50],
       body: Stack(
         children: [
-          // 1. PAGE CONTENT
-          IndexedStack(index: _currentIndex, children: _pages),
+          // 1. PAGE CONTENT (Swipeable)
+          PageView(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            physics: const BouncingScrollPhysics(), // Nice bounce effect
+            children: _pages,
+          ),
 
           // 2. FLOATING NAVIGATION BAR
-          GamifiedNavBar(currentIndex: _currentIndex, onTap: _onTabTapped),
+          GamifiedNavBar(currentIndex: _currentNavIndex, onTap: _onTabTapped),
         ],
       ),
     );
