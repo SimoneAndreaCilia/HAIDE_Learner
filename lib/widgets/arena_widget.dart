@@ -105,7 +105,7 @@ class ArenaWidget extends StatelessWidget {
                       AnimatedScale(
                         duration: const Duration(milliseconds: 600),
                         curve: Curves.easeIn,
-                        scale: isZooming ? 20.0 : 1.0,
+                        scale: isZooming ? 3.0 : 1.0,
                         child: Image.asset(
                           arenaImage,
                           fit: BoxFit.contain,

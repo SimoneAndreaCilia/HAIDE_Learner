@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../services/database_service.dart';
 import 'quiz_screen.dart';
@@ -201,302 +202,377 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
     final totalPages = widget.letters.length + 1;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Column(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: Material(
+          color: Colors.transparent,
+          child: Text(
+            widget.title,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFFFFD700), // Gold
+              shadows: [
+                const Shadow(
+                  offset: Offset(0, 2),
+                  blurRadius: 4.0,
+                  color: Colors.black,
+                ),
+                const Shadow(
+                  // Stronger outline effect
+                  offset: Offset(0, 0),
+                  blurRadius: 8.0,
+                  color: Colors.black,
+                ),
+              ],
+            ),
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+          shadows: [
+            Shadow(offset: Offset(0, 1), blurRadius: 2.0, color: Colors.black),
+          ],
+        ),
+      ),
+      backgroundColor: Colors.white, // Set background to white
+      body: Stack(
         children: [
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: totalPages,
-              onPageChanged: (idx) async {
-                setState(() {
-                  _currentPage = idx;
-                });
+          //Background Image
+          // Positioned.fill(
+          //   child: Image.asset(
+          //     'assets/images/background_alphabetquiz.png',
+          //     fit: BoxFit.cover,
+          //   ),
+          // ),
+          // Content
+          Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: totalPages,
+                  onPageChanged: (idx) async {
+                    setState(() {
+                      _currentPage = idx;
+                    });
 
-                // Persist progress
-                if (widget.lessonId.isNotEmpty) {
-                  final prefs = await SharedPreferences.getInstance();
-                  final key = 'progress_${widget.lessonId}';
-                  final currentMax = prefs.getInt(key) ?? 0;
-                  if (idx > currentMax) {
-                    await prefs.setInt(key, idx);
-                  }
-                  // If completed (last page is the completion card)
-                  if (idx == widget.letters.length) {
-                    await prefs.setInt(key, widget.letters.length);
-                    // ADDED: Save to Firestore
-                    await DatabaseService().updateLessonProgress(
-                      widget.lessonId,
-                    );
-                    // ADDED: Save global 'alphabet' progress for Home Card
-                    await DatabaseService().updateLessonProgress('alphabet');
-                  }
-                }
-              },
-              itemBuilder: (context, index) {
-                if (index == widget.letters.length) {
-                  final hasNextLesson =
-                      widget.currentIndex != -1 &&
-                      widget.currentIndex + 1 < widget.allLessons.length;
+                    // Persist progress
+                    if (widget.lessonId.isNotEmpty) {
+                      final prefs = await SharedPreferences.getInstance();
+                      final key = 'progress_${widget.lessonId}';
+                      final currentMax = prefs.getInt(key) ?? 0;
+                      if (idx > currentMax) {
+                        await prefs.setInt(key, idx);
+                      }
+                      // If completed (last page is the completion card)
+                      if (idx == widget.letters.length) {
+                        await prefs.setInt(key, widget.letters.length);
+                        // ADDED: Save to Firestore
+                        await DatabaseService().updateLessonProgress(
+                          widget.lessonId,
+                        );
+                        // ADDED: Save global 'alphabet' progress for Home Card
+                        await DatabaseService().updateLessonProgress(
+                          'alphabet',
+                        );
+                      }
+                    }
+                  },
+                  itemBuilder: (context, index) {
+                    if (index == widget.letters.length) {
+                      final hasNextLesson =
+                          widget.currentIndex != -1 &&
+                          widget.currentIndex + 1 < widget.allLessons.length;
 
-                  return Center(
-                    child: Card(
-                      margin: const EdgeInsets.all(30),
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(40.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              hasNextLesson ? Icons.check_circle : Icons.school,
-                              size: 80,
-                              color: hasNextLesson
-                                  ? Colors.green
-                                  : Colors.orange,
-                            ),
-                            const SizedBox(height: 30),
-                            Text(
-                              isEnglish
-                                  ? (hasNextLesson
-                                        ? "Lesson Completed!"
-                                        : "All Lessons Completed!")
-                                  : (hasNextLesson
-                                        ? "Lezione Completata!"
-                                        : "Hai finito tutte le lezioni!"),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              isEnglish
-                                  ? (hasNextLesson
-                                        ? "Ready for the next one?"
-                                        : "Test your knowledge with a quiz.")
-                                  : (hasNextLesson
-                                        ? "Passa all'altra lezione"
-                                        : "Mettiti alla prova con un quiz."),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                            const SizedBox(height: 40),
-                            if (hasNextLesson) ...[
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  final nextIndex = widget.currentIndex + 1;
-                                  final nextLessonData =
-                                      widget.allLessons[nextIndex];
+                      return Center(
+                        child: Card(
+                          margin: const EdgeInsets.all(30),
+                          elevation: 8,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(40.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  hasNextLesson
+                                      ? Icons.check_circle
+                                      : Icons.school,
+                                  size: 80,
+                                  color: hasNextLesson
+                                      ? Colors.green
+                                      : Colors.orange,
+                                ),
+                                const SizedBox(height: 30),
+                                Text(
+                                  isEnglish
+                                      ? (hasNextLesson
+                                            ? "Lesson Completed!"
+                                            : "All Lessons Completed!")
+                                      : (hasNextLesson
+                                            ? "Lezione Completata!"
+                                            : "Hai finito tutte le lezioni!"),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  isEnglish
+                                      ? (hasNextLesson
+                                            ? "Ready for the next one?"
+                                            : "Test your knowledge with a quiz.")
+                                      : (hasNextLesson
+                                            ? "Passa all'altra lezione"
+                                            : "Mettiti alla prova con un quiz."),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                                const SizedBox(height: 40),
+                                if (hasNextLesson) ...[
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      final nextIndex = widget.currentIndex + 1;
+                                      final nextLessonData =
+                                          widget.allLessons[nextIndex];
 
-                                  String nextTitle =
-                                      nextLessonData['title'] ?? 'Lesson';
-                                  if (isEnglish &&
-                                      nextLessonData['title_en'] != null) {
-                                    nextTitle = nextLessonData['title_en'];
-                                  }
+                                      String nextTitle =
+                                          nextLessonData['title'] ?? 'Lesson';
+                                      if (isEnglish &&
+                                          nextLessonData['title_en'] != null) {
+                                        nextTitle = nextLessonData['title_en'];
+                                      }
 
-                                  final nextLetters =
-                                      (nextLessonData['letters']
-                                                  as List<dynamic>? ??
-                                              [])
-                                          .cast<Map<String, dynamic>>();
+                                      final nextLetters =
+                                          (nextLessonData['letters']
+                                                      as List<dynamic>? ??
+                                                  [])
+                                              .cast<Map<String, dynamic>>();
 
-                                  final rawNextQuiz =
-                                      nextLessonData['quiz'] as List<dynamic>?;
+                                      final rawNextQuiz =
+                                          nextLessonData['quiz']
+                                              as List<dynamic>?;
 
-                                  final nextQuiz =
-                                      rawNextQuiz
-                                          ?.map(
-                                            (e) => Map<String, dynamic>.from(
-                                              e as Map,
-                                            ),
-                                          )
-                                          .toList() ??
-                                      [];
+                                      final nextQuiz =
+                                          rawNextQuiz
+                                              ?.map(
+                                                (e) =>
+                                                    Map<String, dynamic>.from(
+                                                      e as Map,
+                                                    ),
+                                              )
+                                              .toList() ??
+                                          [];
 
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => AlphabetLessonScreen(
-                                        title: nextTitle,
-                                        letters: nextLetters,
-                                        quiz: nextQuiz,
-                                        allLessons: widget.allLessons,
-                                        currentIndex: nextIndex,
-                                        lessonId:
-                                            nextLessonData['title'] ??
-                                            '', // Simple ID for now
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => AlphabetLessonScreen(
+                                            title: nextTitle,
+                                            letters: nextLetters,
+                                            quiz: nextQuiz,
+                                            allLessons: widget.allLessons,
+                                            currentIndex: nextIndex,
+                                            lessonId:
+                                                nextLessonData['title'] ??
+                                                '', // Simple ID for now
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.arrow_forward),
+                                    label: Text(
+                                      isEnglish
+                                          ? "Next Lesson"
+                                          : "Prossima Lezione",
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 40,
+                                        vertical: 15,
+                                      ),
+                                      textStyle: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
+                                  ),
+                                  const SizedBox(height: 15),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Text(
+                                      isEnglish
+                                          ? "No, back to lessons"
+                                          : "No, torna alle lezioni",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey[600],
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ] else
+                                  ElevatedButton.icon(
+                                    onPressed: _startQuiz,
+                                    icon: const Icon(Icons.play_arrow),
+                                    label: Text(l10n.startQuiz),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 40,
+                                        vertical: 15,
+                                      ),
+                                      textStyle: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    final letterData = widget.letters[index];
+                    return FlashcardWidget(
+                      letterData: letterData,
+                      tts: flutterTts,
+                      isEnglish: isEnglish,
+                    );
+                  },
+                ),
+              ),
+
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(totalPages, (index) {
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: _currentPage == index ? 12 : 8,
+                          height: _currentPage == index ? 12 : 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _currentPage == index
+                                ? Colors.blue
+                                : Colors.grey[300],
+                          ),
+                        );
+                      }),
+                    ),
+                    if (_currentPage < widget.letters.length) ...[
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            // Pulsante Indietro (Se non siamo alla prima pagina)
+                            if (_currentPage > 0)
+                              Expanded(
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 15,
+                                    ),
+                                    backgroundColor: Colors.grey[400],
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    elevation: 3,
+                                  ),
+                                  onPressed: () {
+                                    _pageController.previousPage(
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  },
+                                  child: const Icon(Icons.arrow_back),
+                                ),
+                              ),
+
+                            if (_currentPage > 0) const SizedBox(width: 20),
+
+                            // Pulsante Avanti
+                            Expanded(
+                              flex: 4,
+                              child: GestureDetector(
+                                onTap: () {
+                                  _pageController.nextPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
                                   );
                                 },
-                                icon: const Icon(Icons.arrow_forward),
-                                label: Text(
-                                  isEnglish
-                                      ? "Next Lesson"
-                                      : "Prossima Lezione",
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 40,
-                                    vertical: 15,
+                                child: Container(
+                                  height: 75,
+                                  decoration: const BoxDecoration(
+                                    image: DecorationImage(
+                                      image: AssetImage(
+                                        'assets/images/next_bottom.png',
+                                      ),
+                                      fit: BoxFit.contain,
+                                    ),
                                   ),
-                                  textStyle: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 15),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: Text(
-                                  isEnglish
-                                      ? "No, back to lessons"
-                                      : "No, torna alle lezioni",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                            ] else
-                              ElevatedButton.icon(
-                                onPressed: _startQuiz,
-                                icon: const Icon(Icons.play_arrow),
-                                label: Text(l10n.startQuiz),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 40,
-                                    vertical: 15,
-                                  ),
-                                  textStyle: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.only(
+                                    bottom: 5,
+                                  ), // Adjust for text centering if needed
+                                  child: Text(
+                                    isEnglish
+                                        ? "Next Letter"
+                                        : "Prossima Lettera",
+                                    style: GoogleFonts.nunito(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(
+                                        0xFFFFF8E1,
+                                      ), // Cream/Gold
+                                      shadows: [
+                                        const Shadow(
+                                          blurRadius: 2.0,
+                                          color: Colors.black,
+                                          offset: Offset(1, 1),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  );
-                }
-
-                final letterData = widget.letters[index];
-                return FlashcardWidget(
-                  letterData: letterData,
-                  tts: flutterTts,
-                  isEnglish: isEnglish,
-                );
-              },
-            ),
-          ),
-
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(totalPages, (index) {
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: _currentPage == index ? 12 : 8,
-                      height: _currentPage == index ? 12 : 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _currentPage == index
-                            ? Colors.blue
-                            : Colors.grey[300],
-                      ),
-                    );
-                  }),
+                    ],
+                  ],
                 ),
-                if (_currentPage < widget.letters.length) ...[
-                  const SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      children: [
-                        // Pulsante Indietro (Se non siamo alla prima pagina)
-                        if (_currentPage > 0)
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 15,
-                                ),
-                                backgroundColor: Colors.grey[400],
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                elevation: 3,
-                              ),
-                              onPressed: () {
-                                _pageController.previousPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              },
-                              child: const Icon(Icons.arrow_back),
-                            ),
-                          ),
-
-                        if (_currentPage > 0) const SizedBox(width: 20),
-
-                        // Pulsante Avanti
-                        Expanded(
-                          flex: 3,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              backgroundColor: Colors.blueAccent,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              elevation: 3,
-                            ),
-                            onPressed: () {
-                              _pageController.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            },
-                            child: Text(
-                              isEnglish ? "Next Letter" : "Prossima Lettera",
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -601,19 +677,20 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
     );
   }
 
-  Widget _buildCard(Widget child, Color color, Color borderColor) {
+  Widget _buildCard(Widget child) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 100),
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: borderColor, width: 4),
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/images/flipcard.png'),
+          fit: BoxFit.fill, // Fill to stretch the parchment
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black26,
+            color: Colors.black45,
             blurRadius: 15,
-            offset: const Offset(0, 8),
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -629,55 +706,48 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
         children: [
           Text(
             char,
-            style: const TextStyle(
+            style: GoogleFonts.nunito(
               fontSize: 140,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: const Color(0xFF3E2723), // Dark Brown/Sepia
             ),
           ),
           const SizedBox(height: 30),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
               tip,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 24,
-                color: Colors.white,
+              style: GoogleFonts.nunito(
+                fontSize: 26,
+                color: const Color(0xFF3E2723), // Ink color
                 fontStyle: FontStyle.italic,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          const SizedBox(height: 50),
-          IconButton(
-            icon: const CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.volume_up, size: 30, color: Colors.white),
-            ),
-            onPressed: () {
-              // Speak the character or standard sound
+          const SizedBox(height: 40),
+          GestureDetector(
+            onTap: () {
               widget.tts.speak(char);
             },
+            child: Image.asset(
+              'assets/images/corno_speaker.png',
+              width: 60,
+              height: 60,
+            ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             "Tap to flip",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
+            style: GoogleFonts.nunito(
+              color: const Color(0xFF5D4037),
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
         ],
       ),
-      Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF2E7D32) // Darker green for dark mode
-          : const Color(0xFF58CC02), // Duolingo green-ish
-      Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF1B5E20) // Even darker border
-          : const Color(0xFF46A302),
     );
   }
 
@@ -693,56 +763,49 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
         children: [
           Text(
             translit,
-            style: const TextStyle(
+            style: GoogleFonts.nunito(
               fontSize: 100,
               fontWeight: FontWeight.bold,
-              color: Colors.indigo,
+              color: const Color(0xFF3E2723),
             ),
           ),
           const SizedBox(height: 30),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-            margin: const EdgeInsets.symmetric(horizontal: 30),
-            decoration: BoxDecoration(
-              color: Colors.indigo.shade50,
-              borderRadius: BorderRadius.circular(15),
-            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
             child: Column(
               children: [
                 Text(
                   example,
-                  style: const TextStyle(
-                    fontSize: 28,
+                  style: GoogleFonts.nunito(
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: const Color(0xFF3E2723),
                   ),
                 ),
                 Text(
                   translation,
-                  style: const TextStyle(
-                    fontSize: 20,
+                  style: GoogleFonts.nunito(
+                    fontSize: 24,
                     fontStyle: FontStyle.italic,
-                    color: Colors.grey,
+                    color: const Color(0xFF5D4037),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 40),
-          IconButton(
-            icon: const CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.indigoAccent,
-              child: Icon(Icons.volume_up, size: 30, color: Colors.white),
-            ),
-            onPressed: () {
+          GestureDetector(
+            onTap: () {
               widget.tts.speak(example);
             },
+            child: Image.asset(
+              'assets/images/corno_speaker.png',
+              width: 60,
+              height: 60,
+            ),
           ),
         ],
       ),
-      Colors.white,
-      Colors.indigo,
     );
   }
 }

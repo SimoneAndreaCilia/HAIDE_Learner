@@ -169,6 +169,19 @@ class ArenaPageState extends State<ArenaPage>
               return _buildArenaPage(context, arena, index);
             },
           ),
+
+          // Magic Flash Overlay
+          Positioned.fill(
+            child: IgnorePointer(
+              ignoring: !_isZooming,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeIn,
+                opacity: _isZooming ? 1.0 : 0.0,
+                child: Container(color: Colors.white),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -242,12 +255,12 @@ class ArenaPageState extends State<ArenaPage>
       _zoomingIndex = index;
     });
 
-    // Wait for the scale animation to complete (approx match the duration in ArenaWidget)
-    await Future.delayed(const Duration(milliseconds: 300));
+    // Wait for the flash/zoom animation to complete
+    await Future.delayed(const Duration(milliseconds: 600));
 
     if (!context.mounted) return;
 
-    // Navigate with a Fade transition to feel like we are "inside"
+    // Navigate with a Fade transition to feel like we are appearing from the white flash
     await Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) {
@@ -263,7 +276,7 @@ class ArenaPageState extends State<ArenaPage>
                   ),
           );
         },
-        transitionDuration: const Duration(milliseconds: 600),
+        transitionDuration: const Duration(milliseconds: 800),
       ),
     );
 
