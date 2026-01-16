@@ -5,6 +5,7 @@ import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/generated/app_localizations.dart';
 import 'alphabet_lesson_screen.dart';
+import '../widgets/unrolling_scroll_dialog.dart';
 
 class AlphabetListScreen extends StatefulWidget {
   const AlphabetListScreen({super.key});
@@ -238,41 +239,76 @@ class _AlphabetListScreenState extends State<AlphabetListScreen> {
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              onTap: () async {
-                                final rawQuiz = data['quiz'] as List<dynamic>?;
+                              onTap: () {
+                                String longDescription =
+                                    data['long_description_it'] ??
+                                    data['description'] ??
+                                    '';
+                                if (isEnglish) {
+                                  longDescription =
+                                      data['long_description_en'] ??
+                                      data['description_en'] ??
+                                      longDescription;
+                                }
 
-                                final quizData =
-                                    rawQuiz
-                                        ?.map(
-                                          (e) => Map<String, dynamic>.from(
-                                            e as Map,
-                                          ),
-                                        )
-                                        .toList() ??
-                                    [];
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible:
+                                      true, // Allow clicking outside to close
+                                  barrierColor: Colors.black54,
+                                  builder: (dialogContext) =>
+                                      UnrollingScrollDialog(
+                                        title: displayTitle,
+                                        description: longDescription,
+                                        onStart: () async {
+                                          Navigator.of(dialogContext).pop();
 
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => AlphabetLessonScreen(
-                                      title: displayTitle,
-                                      letters: letters
-                                          .cast<Map<String, dynamic>>(),
-                                      quiz: quizData,
-                                      allLessons: docs
-                                          .map(
-                                            (d) =>
-                                                d.data()
-                                                    as Map<String, dynamic>,
-                                          )
-                                          .toList(),
-                                      currentIndex: index,
-                                      lessonId: lessonId,
-                                    ),
-                                  ),
+                                          final rawQuiz =
+                                              data['quiz'] as List<dynamic>?;
+
+                                          final quizData =
+                                              rawQuiz
+                                                  ?.map(
+                                                    (e) =>
+                                                        Map<
+                                                          String,
+                                                          dynamic
+                                                        >.from(e as Map),
+                                                  )
+                                                  .toList() ??
+                                              [];
+
+                                          await Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  AlphabetLessonScreen(
+                                                    title: displayTitle,
+                                                    letters: letters
+                                                        .cast<
+                                                          Map<String, dynamic>
+                                                        >(),
+                                                    quiz: quizData,
+                                                    allLessons: docs
+                                                        .map(
+                                                          (d) =>
+                                                              d.data()
+                                                                  as Map<
+                                                                    String,
+                                                                    dynamic
+                                                                  >,
+                                                        )
+                                                        .toList(),
+                                                    currentIndex: index,
+                                                    lessonId: lessonId,
+                                                  ),
+                                            ),
+                                          );
+                                          // Refresh progress bars
+                                          if (mounted) setState(() {});
+                                        },
+                                      ),
                                 );
-                                // Refresh progress bars
-                                setState(() {});
                               },
                               borderRadius: BorderRadius.circular(15),
                               child: Padding(
@@ -288,32 +324,38 @@ class _AlphabetListScreenState extends State<AlphabetListScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     // Title with "Ink" effect
-                                    Text(
-                                      displayTitle,
-                                      style: GoogleFonts.medievalSharp(
-                                        // Fantasy style
-                                        fontSize: 19,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(
-                                          0xFF3E2723,
-                                        ), // Ink color
-                                        shadows: [
-                                          Shadow(
-                                            blurRadius: 1.0,
-                                            color: Colors.grey.withValues(
-                                              alpha: 0.5,
+                                    Material(
+                                      color: Colors.transparent,
+                                      type: MaterialType.transparency,
+                                      child: Text(
+                                        displayTitle,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.nunito(
+                                          // Fantasy style
+                                          fontSize: 19,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(
+                                            0xFF3E2723,
+                                          ), // Ink color
+                                          shadows: [
+                                            Shadow(
+                                              blurRadius: 1.0,
+                                              color: Colors.grey.withValues(
+                                                alpha: 0.5,
+                                              ),
+                                              offset: const Offset(1, 1),
                                             ),
-                                            offset: const Offset(1, 1),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     if (description.isNotEmpty) ...[
                                       const SizedBox(height: 4),
                                       Text(
                                         description,
-                                        style: GoogleFonts.crimsonText(
-                                          // "Handwritten" serif
+                                        style: GoogleFonts.nunito(
                                           color: const Color(0xFF4E342E),
                                           fontSize:
                                               15, // Slightly larger as it's a smaller font visually
