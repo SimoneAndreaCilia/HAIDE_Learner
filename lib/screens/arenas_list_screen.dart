@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../providers/language_provider.dart'; // Import LanguageProvider
+import '../providers/theme_provider.dart';
 import '../widgets/animated_sky_background.dart';
 
 class ArenaData {
@@ -286,6 +287,8 @@ class ArenaListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final languageProvider = Provider.of<LanguageProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
     final lang = languageProvider.currentLocale.languageCode;
 
     // Se è bloccata, usiamo toni di grigio
@@ -300,11 +303,13 @@ class ArenaListCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16), // Spazio tra le card
         height: 100,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.blue.withValues(alpha: 0.1), // Ombra color cielo
+              color: isDarkMode
+                  ? Colors.black.withValues(alpha: 0.5)
+                  : Colors.blue.withValues(alpha: 0.1), // Ombra color cielo
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -343,7 +348,9 @@ class ArenaListCard extends StatelessWidget {
                       style: GoogleFonts.nunito(
                         fontWeight: FontWeight.w900,
                         fontSize: 16,
-                        color: isLocked ? Colors.grey[600] : Colors.black87,
+                        color: isLocked
+                            ? (isDarkMode ? Colors.grey[600] : Colors.grey[600])
+                            : (isDarkMode ? Colors.white : Colors.black87),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -353,7 +360,7 @@ class ArenaListCard extends StatelessWidget {
                       arena.getDescription(lang),
                       style: GoogleFonts.nunito(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                         height: 1.2,
                       ),
                       maxLines: 2,
