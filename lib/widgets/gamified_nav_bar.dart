@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/language_provider.dart';
+import '../providers/theme_provider.dart';
 
 class GamifiedNavBar extends StatelessWidget {
   final int currentIndex;
@@ -17,7 +18,9 @@ class GamifiedNavBar extends StatelessWidget {
     // Dimensioni dello schermo per adattamento
     // double width = MediaQuery.of(context).size.width; // Unused for now but kept for consistency with request if needed later
     final languageProvider = Provider.of<LanguageProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final isIt = languageProvider.currentLocale.languageCode == 'it';
+    final isDarkMode = themeProvider.isDarkMode;
 
     return Positioned(
       bottom: 20, // Sollevata dal fondo (Effetto Fluttuante)
@@ -26,15 +29,19 @@ class GamifiedNavBar extends StatelessWidget {
       child: Container(
         height: 70, // Altezza della barra
         decoration: BoxDecoration(
-          color: Colors.white, // Sfondo bianco pulito
+          color: isDarkMode
+              ? const Color(0xFF1E1E1E)
+              : Colors.white, // Sfondo scuro per Dark Mode
           borderRadius: BorderRadius.circular(
             35,
           ), // Bordi molto arrotondati (Pill shape)
           boxShadow: [
             BoxShadow(
-              color: Colors.blue.withValues(
-                alpha: 0.2,
-              ), // Ombra azzurra per richiamare il cielo
+              color: isDarkMode
+                  ? Colors.black.withValues(alpha: 0.5)
+                  : Colors.blue.withValues(
+                      alpha: 0.2,
+                    ), // Ombra più scura in Dark Mode
               blurRadius: 15,
               offset: const Offset(0, 5),
               spreadRadius: 2,
