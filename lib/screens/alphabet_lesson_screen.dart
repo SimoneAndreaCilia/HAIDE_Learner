@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../services/database_service.dart';
+import '../widgets/animated_sky_background.dart';
 import 'quiz_screen.dart';
 
 class AlphabetLessonScreen extends StatefulWidget {
@@ -239,16 +240,10 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
           ],
         ),
       ),
-      backgroundColor: Colors.white, // Set background to white
       body: Stack(
         children: [
-          //Background Image
-          // Positioned.fill(
-          //   child: Image.asset(
-          //     'assets/images/background_alphabetquiz.png',
-          //     fit: BoxFit.cover,
-          //   ),
-          // ),
+          // Animated Sky Background
+          const Positioned.fill(child: AnimatedSkyBackground()),
           // Content
           Column(
             children: [
@@ -290,27 +285,42 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
                           widget.currentIndex + 1 < widget.allLessons.length;
 
                       return Center(
-                        child: Card(
-                          margin: const EdgeInsets.all(30),
-                          elevation: 8,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 30,
+                            vertical: 60,
+                          ),
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: const Color(0xFFD4A574),
+                              width: 2.0,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            image: const DecorationImage(
+                              image: AssetImage('assets/images/flipcard.png'),
+                              fit: BoxFit.fill,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF5D4037,
+                                ).withValues(alpha: 0.4),
+                                blurRadius: 15,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(40.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  hasNextLesson
-                                      ? Icons.check_circle
-                                      : Icons.school,
-                                  size: 80,
-                                  color: hasNextLesson
-                                      ? Colors.green
-                                      : Colors.orange,
+                                Text(
+                                  hasNextLesson ? '🏆' : '🎓',
+                                  style: const TextStyle(fontSize: 70),
                                 ),
-                                const SizedBox(height: 30),
+                                const SizedBox(height: 20),
                                 Text(
                                   isEnglish
                                       ? (hasNextLesson
@@ -320,12 +330,13 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
                                             ? "Lezione Completata!"
                                             : "Hai finito tutte le lezioni!"),
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
+                                  style: GoogleFonts.nunito(
                                     fontSize: 26,
                                     fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF3E2723),
                                   ),
                                 ),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 16),
                                 Text(
                                   isEnglish
                                       ? (hasNextLesson
@@ -335,15 +346,20 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
                                             ? "Passa all'altra lezione"
                                             : "Mettiti alla prova con un quiz."),
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: GoogleFonts.nunito(
                                     fontSize: 18,
-                                    color: Colors.grey[700],
+                                    fontStyle: FontStyle.italic,
+                                    color: const Color(0xFF5D4037),
                                   ),
                                 ),
-                                const SizedBox(height: 40),
+                                const SizedBox(height: 30),
                                 if (hasNextLesson) ...[
-                                  ElevatedButton.icon(
-                                    onPressed: () {
+                                  _buildFantasyButton(
+                                    label: isEnglish
+                                        ? "Next Lesson"
+                                        : "Prossima Lezione",
+                                    icon: Icons.arrow_forward,
+                                    onTap: () {
                                       final nextIndex = widget.currentIndex + 1;
                                       final nextLessonData =
                                           widget.allLessons[nextIndex];
@@ -392,58 +408,29 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
                                         ),
                                       );
                                     },
-                                    icon: const Icon(Icons.arrow_forward),
-                                    label: Text(
-                                      isEnglish
-                                          ? "Next Lesson"
-                                          : "Prossima Lezione",
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.blue,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 40,
-                                        vertical: 15,
-                                      ),
-                                      textStyle: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
                                   ),
                                   const SizedBox(height: 15),
-                                  TextButton(
-                                    onPressed: () {
+                                  GestureDetector(
+                                    onTap: () {
                                       Navigator.of(context).pop();
                                     },
                                     child: Text(
                                       isEnglish
                                           ? "No, back to lessons"
                                           : "No, torna alle lezioni",
-                                      style: TextStyle(
+                                      style: GoogleFonts.nunito(
                                         fontSize: 16,
-                                        color: Colors.grey[600],
+                                        color: const Color(0xFF5D4037),
                                         decoration: TextDecoration.underline,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
                                 ] else
-                                  ElevatedButton.icon(
-                                    onPressed: _startQuiz,
-                                    icon: const Icon(Icons.play_arrow),
-                                    label: Text(l10n.startQuiz),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 40,
-                                        vertical: 15,
-                                      ),
-                                      textStyle: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                  _buildFantasyButton(
+                                    label: l10n.startQuiz,
+                                    icon: Icons.play_arrow,
+                                    onTap: _startQuiz,
                                   ),
                               ],
                             ),
@@ -464,22 +451,52 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
 
               Container(
                 padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.0),
+                      Colors.white.withValues(alpha: 0.7),
+                      Colors.white.withValues(alpha: 0.9),
+                    ],
+                    stops: const [0.0, 0.3, 1.0],
+                  ),
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(totalPages, (index) {
+                        final isActive = _currentPage == index;
                         return AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: _currentPage == index ? 12 : 8,
-                          height: _currentPage == index ? 12 : 8,
+                          width: isActive ? 12 : 8,
+                          height: isActive ? 12 : 8,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: _currentPage == index
-                                ? Colors.blue
-                                : Colors.grey[300],
+                            color: isActive
+                                ? const Color(0xFFFFD700)
+                                : const Color(0xFFD7CCC8),
+                            border: isActive
+                                ? Border.all(
+                                    color: const Color(0xFF3E2723),
+                                    width: 1,
+                                  )
+                                : null,
+                            boxShadow: isActive
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(
+                                        0xFFFFD700,
+                                      ).withValues(alpha: 0.5),
+                                      blurRadius: 6,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : null,
                           ),
                         );
                       }),
@@ -492,28 +509,47 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
                           children: [
                             // Pulsante Indietro (Se non siamo alla prima pagina)
                             if (_currentPage > 0)
-                              Expanded(
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 15,
+                              GestureDetector(
+                                onTap: () {
+                                  _pageController.previousPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
+                                child: Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: const LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Color(0xFFFFD700),
+                                        Color(0xFFFFA000),
+                                      ],
                                     ),
-                                    backgroundColor: Colors.grey[400],
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                                    elevation: 3,
-                                  ),
-                                  onPressed: () {
-                                    _pageController.previousPage(
-                                      duration: const Duration(
-                                        milliseconds: 300,
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.5,
                                       ),
-                                      curve: Curves.easeInOut,
-                                    );
-                                  },
-                                  child: const Icon(Icons.arrow_back),
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.25,
+                                        ),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.arrow_back,
+                                    color: Color(0xFF3E2723),
+                                    size: 24,
+                                  ),
                                 ),
                               ),
 
@@ -575,6 +611,51 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFantasyButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: const Color(0xFFFFECB3), width: 2.0),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF8D6E63), Color(0xFF3E2723)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: const Color(0xFFFFECB3), size: 22),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: GoogleFonts.nunito(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFFFFECB3),
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -679,18 +760,20 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
 
   Widget _buildCard(Widget child) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 100),
+      margin: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
       width: double.infinity,
-      decoration: const BoxDecoration(
-        image: DecorationImage(
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFD4A574), width: 2.0),
+        borderRadius: BorderRadius.circular(16),
+        image: const DecorationImage(
           image: AssetImage('assets/images/flipcard.png'),
-          fit: BoxFit.fill, // Fill to stretch the parchment
+          fit: BoxFit.fill,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black45,
+            color: const Color(0xFF5D4037).withValues(alpha: 0.4),
             blurRadius: 15,
-            offset: Offset(0, 8),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -739,7 +822,7 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
           ),
           const SizedBox(height: 20),
           Text(
-            "Tap to flip",
+            widget.isEnglish ? "Tap to flip" : "Tocca per girare",
             style: GoogleFonts.nunito(
               color: const Color(0xFF5D4037),
               fontSize: 18,
