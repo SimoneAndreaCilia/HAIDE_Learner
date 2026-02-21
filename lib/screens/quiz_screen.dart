@@ -11,6 +11,7 @@ import 'package:lottie/lottie.dart'; // Per animazioni fluide vettoriali
 import '../providers/progress_provider.dart';
 import '../services/database_service.dart';
 import '../core/models/question.dart';
+import '../providers/quiz_provider.dart';
 
 class QuizScreen extends StatefulWidget {
   final String titoloLezione;
@@ -42,18 +43,15 @@ class QuizScreen extends StatefulWidget {
 }
 
 class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
-  int _indiceDomanda = 0;
-  int _punteggio = 0;
-  int _vite = 3;
-  bool _rispostaData = false;
+  // UI-only state (not quiz logic)
   bool _erroreRecente = false;
-  bool _gameOver = false;
 
   final FlutterTts flutterTts = FlutterTts();
   final GlobalKey<AnimazioneScossaState> _shakeKey =
       GlobalKey<AnimazioneScossaState>();
 
-  late List<Question> _domande;
+  // Quiz logic lives in QuizProvider — created once, scoped to this screen
+  late final QuizProvider _quizProvider;
 
   // Animation for the tips lightbulb
   late AnimationController _tipsAnimController;
@@ -61,7 +59,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _inizializzaDomande();
+    _quizProvider = QuizProvider()..initQuiz(widget.domande);
     _configuraVoce();
 
     // Initialize Wiggle/Shake animation
@@ -81,13 +79,9 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _quizProvider.dispose();
     _tipsAnimController.dispose();
     super.dispose();
-  }
-
-  void _inizializzaDomande() {
-    // Each Question is immutable — withShuffledOptions() returns a new instance
-    _domande = widget.domande.map((q) => q.withShuffledOptions()).toList();
   }
 
   void _configuraVoce() async {
@@ -102,7 +96,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       listen: false,
     );
     final isEnglish = languageProvider.currentLocale.languageCode == 'en';
-    final domanda = _domande[_indiceDomanda];
+    final domanda = _quizProvider.currentQuestion;
 
     final testoDaLeggere = domanda.getPronunciation(isEnglish);
 
@@ -112,56 +106,47 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   }
 
   void _verificaRisposta(String scelta, String corretta) {
-    if (_rispostaData || _gameOver) return;
+    if (_quizProvider.answerGiven || _quizProvider.isGameOver) return;
 
     final l10n = AppLocalizations.of(context)!;
+    final result = _quizProvider.checkAnswer(scelta, corretta);
 
     setState(() {
-      _rispostaData = true;
+      switch (result) {
+        case AnswerResult.correct:
+          _mostraFeedbackAnimato(l10n.bravo, true);
+          _avanzaDomanda();
+          break;
 
-      if (scelta == corretta) {
-        _punteggio++;
-        _mostraFeedbackAnimato(l10n.bravo, true);
-        _avanzaDomanda();
-      } else {
-        _vite--;
-        _erroreRecente = true;
-        _shakeKey.currentState?.scuoti();
-        _mostraFeedbackAnimato(
-          l10n.wrongMessage(corretta),
-          false,
-        ); // Ti dice qual era quella giusta
+        case AnswerResult.wrong:
+          _erroreRecente = true;
+          _shakeKey.currentState?.scuoti();
+          _mostraFeedbackAnimato(l10n.wrongMessage(corretta), false);
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted) {
+              _quizProvider.clearAnswerState();
+              setState(() => _erroreRecente = false);
+            }
+          });
+          break;
 
-        if (_vite == 0) {
-          _gameOver = true;
-          // Ritardiamo il Game Over per far vedere l'errore
+        case AnswerResult.gameOver:
+          _erroreRecente = true;
+          _shakeKey.currentState?.scuoti();
+          _mostraFeedbackAnimato(l10n.wrongMessage(corretta), false);
           Future.delayed(const Duration(milliseconds: 1200), () {
             if (mounted) _mostraGameOver();
           });
-        } else {
-          Future.delayed(const Duration(milliseconds: 1500), () {
-            // Tempo aumentato un po' per leggere l'errore
-            if (mounted) {
-              setState(() {
-                _rispostaData = false;
-                _erroreRecente = false;
-              });
-            }
-          });
-        }
+          break;
       }
     });
   }
 
   void _avanzaDomanda() {
     Future.delayed(const Duration(milliseconds: 1500), () {
-      if (_vite > 0 && mounted) {
-        if (_indiceDomanda < _domande.length - 1) {
-          setState(() {
-            _indiceDomanda++;
-            _rispostaData = false;
-            _erroreRecente = false;
-          });
+      if (!_quizProvider.isGameOver && mounted) {
+        if (_quizProvider.advanceQuestion()) {
+          setState(() => _erroreRecente = false);
         } else {
           _fineLezione();
         }
@@ -393,6 +378,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
 
   void _fineLezione() {
     final l10n = AppLocalizations.of(context)!;
+    final provider = _quizProvider;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -405,12 +391,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
             const Icon(Icons.stars, color: Colors.orange, size: 60),
             const SizedBox(height: 20),
             Text(
-              "${l10n.score}: $_punteggio / ${_domande.length}",
+              "${l10n.score}: ${provider.score} / ${provider.totalQuestions}",
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 10),
             Text(
-              l10n.livesLeft(_vite),
+              l10n.livesLeft(provider.lives),
               style: const TextStyle(color: Colors.grey),
             ),
           ],
@@ -581,8 +567,17 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    return ChangeNotifierProvider.value(
+      value: _quizProvider,
+      child: Consumer<QuizProvider>(
+        builder: (context, provider, _) => _buildQuizBody(context, provider),
+      ),
+    );
+  }
+
+  Widget _buildQuizBody(BuildContext context, QuizProvider provider) {
     final l10n = AppLocalizations.of(context)!;
-    final q = _domande[_indiceDomanda];
+    final q = provider.currentQuestion;
 
     // Recupera lingua corrente
     final languageProvider = Provider.of<LanguageProvider>(
@@ -645,7 +640,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                 child: Row(
                   children: [
                     Text(
-                      "$_vite",
+                      "${provider.lives}",
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -720,9 +715,11 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
-                  value: (_indiceDomanda + 1) / _domande.length,
+                  value: provider.progress,
                   minHeight: 15,
-                  color: _vite > 1 ? const Color(0xFF58CC02) : Colors.orange,
+                  color: provider.lives > 1
+                      ? const Color(0xFF58CC02)
+                      : Colors.orange,
                   backgroundColor: Colors.grey.shade200,
                 ),
               ),
