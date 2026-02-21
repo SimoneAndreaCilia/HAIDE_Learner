@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:provider/provider.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../widgets/animazione_scossa.dart';
 import '../providers/language_provider.dart';
@@ -174,9 +175,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              backgroundColor: corretto
-                  ? Colors.green.shade50
-                  : Colors.red.shade50,
+              backgroundColor: corretto ? AppColors.cream : Colors.red.shade50,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 24,
                 vertical: 20,
@@ -188,18 +187,18 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                     corretto
                         ? Icons.celebration
                         : Icons.sentiment_very_dissatisfied,
-                    color: corretto ? Colors.green : Colors.red,
+                    color: corretto ? AppColors.successGreen : Colors.red,
                     size: 60,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     testo,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: GoogleFonts.nunito(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: corretto
-                          ? Colors.green.shade800
+                          ? AppColors.successGreen
                           : Colors.red.shade800,
                     ),
                   ),
@@ -577,6 +576,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   Widget _buildQuizBody(BuildContext context, QuizProvider provider) {
     final l10n = AppLocalizations.of(context)!;
     final q = provider.currentQuestion;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Recupera lingua corrente
     final languageProvider = Provider.of<LanguageProvider>(
@@ -595,7 +595,16 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.titoloLezione),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          widget.titoloLezione,
+          style: GoogleFonts.nunito(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: isDark ? AppColors.goldLight : AppColors.brownDark,
+          ),
+        ),
         actions: [
           if (widget.tips != null && widget.tips!.isNotEmpty)
             AnimatedBuilder(
@@ -659,19 +668,25 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         ],
       ),
       body: Container(
-        // Wrap body in Container for gradient/background
+        // Background gradient — tinted by topicColor when available
         decoration: BoxDecoration(
-          gradient: widget.topicColor != null
-              ? LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    widget.topicColor!.withValues(alpha: 0.1),
-                    Theme.of(context).scaffoldBackgroundColor,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [
+                    widget.topicColor?.withValues(alpha: 0.35) ??
+                        AppColors.darkBg,
+                    widget.topicColor?.withValues(alpha: 0.10) ??
+                        AppColors.darkSurface,
+                  ]
+                : [
+                    widget.topicColor?.withValues(alpha: 0.40) ??
+                        AppColors.cream,
+                    widget.topicColor?.withValues(alpha: 0.10) ??
+                        AppColors.parchment.withValues(alpha: 0.3),
                   ],
-                  stops: const [0.0, 0.3],
-                )
-              : null,
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -715,11 +730,11 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: provider.progress,
-                  minHeight: 15,
-                  color: provider.lives > 1
-                      ? const Color(0xFF58CC02)
-                      : Colors.orange,
-                  backgroundColor: Colors.grey.shade200,
+                  minHeight: 14,
+                  color: provider.lives > 1 ? AppColors.gold : Colors.orange,
+                  backgroundColor: isDark
+                      ? AppColors.darkCard
+                      : AppColors.warmGray,
                 ),
               ),
               const Spacer(),
@@ -734,10 +749,10 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
 
                   return Text(
                     questionText,
-                    style: TextStyle(
-                      color: const Color.fromARGB(255, 155, 154, 154),
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
+                    style: GoogleFonts.nunito(
+                      color: isDark ? AppColors.warmGray : AppColors.brown,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
                     ),
                     textAlign: TextAlign.center,
                   );
@@ -749,8 +764,23 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300, width: 2),
-                  borderRadius: BorderRadius.circular(15),
+                  color: isDark ? AppColors.darkCard : Colors.white,
+                  border: Border.all(
+                    color:
+                        widget.topicColor?.withValues(alpha: 0.5) ??
+                        (isDark ? AppColors.brown : AppColors.tan),
+                    width: 1.5,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.brown.withValues(
+                        alpha: isDark ? 0.3 : 0.1,
+                      ),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -785,9 +815,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                       // MOSTRIAMO IL TESTO SOLO SE NON È UNA DOMANDA AUDIO
                       Text(
                         parolaBulgara,
-                        style: const TextStyle(
+                        style: GoogleFonts.nunito(
                           fontSize: 32,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
+                          color: isDark
+                              ? AppColors.goldLight
+                              : AppColors.brownDark,
                         ),
                       )
                     else
@@ -804,9 +837,11 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                         if (immagineUrl == null && !isAudioQuestion)
                           Text(
                             pronuncia,
-                            style: const TextStyle(
+                            style: GoogleFonts.nunito(
                               fontSize: 18,
-                              color: Colors.blueGrey,
+                              color: isDark
+                                  ? AppColors.warmGray
+                                  : AppColors.brown,
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -822,9 +857,11 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                           Transform.scale(
                             scale: isAudioQuestion ? 2.0 : 1.0,
                             child: IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.volume_up,
-                                color: Colors.blue,
+                                color: isDark
+                                    ? AppColors.goldLight
+                                    : AppColors.indigo,
                                 size: 30,
                               ),
                               onPressed: _parlaCurrent,
@@ -846,12 +883,23 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.all(18),
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      surfaceTintColor: Colors.white,
-                      side: const BorderSide(color: Colors.grey, width: 2),
-                      elevation: 4,
-                      shadowColor: Colors.grey.shade400,
+                      backgroundColor: isDark
+                          ? AppColors.darkCard
+                          : Colors.white,
+                      foregroundColor: isDark
+                          ? AppColors.goldLight
+                          : AppColors.brownDark,
+                      surfaceTintColor: isDark
+                          ? AppColors.darkCard
+                          : Colors.white,
+                      side: BorderSide(
+                        color:
+                            widget.topicColor?.withValues(alpha: 0.5) ??
+                            (isDark ? AppColors.brown : AppColors.tan),
+                        width: 1.5,
+                      ),
+                      elevation: 3,
+                      shadowColor: AppColors.brown.withValues(alpha: 0.2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -860,9 +908,9 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                         _verificaRisposta(opzione, rispostaCorretta),
                     child: Text(
                       opzione,
-                      style: const TextStyle(
+                      style: GoogleFonts.nunito(
                         fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
