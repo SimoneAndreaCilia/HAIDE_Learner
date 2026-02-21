@@ -7,6 +7,7 @@ import '../l10n/generated/app_localizations.dart';
 import '../services/database_service.dart';
 import '../widgets/animated_sky_background.dart';
 import 'quiz_screen.dart';
+import '../core/models/question.dart';
 
 class AlphabetLessonScreen extends StatefulWidget {
   final String title;
@@ -50,40 +51,29 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
   void _startQuiz() async {
     // If we have a pre-defined quiz, use it
     if (widget.quiz != null && widget.quiz!.isNotEmpty) {
+      // Helper per gestire tipi dynamic in modo sicuro
+      String safeStr(dynamic val) => val?.toString() ?? '';
+      List<String> safeList(dynamic val) {
+        if (val is List) {
+          return val.map((e) => e.toString()).toList();
+        }
+        return [];
+      }
+
       final questions = widget.quiz!.map((q) {
-        // Helper per gestire tipi dynamic in modo sicuro
-        String safeStr(dynamic val) => val?.toString() ?? '';
-        List<String> safeList(dynamic val) {
-          if (val is List) {
-            return val.map((e) => e.toString()).toList();
-          }
-          return [];
-        }
-
-        final opzioni = safeList(q['options']);
-        opzioni.shuffle();
-
-        final opzioniEn = safeList(q['options_en']);
-        if (opzioniEn.isNotEmpty) {
-          opzioniEn.shuffle();
-        }
-
-        return {
-          'domanda': safeStr(q['question_it']).isNotEmpty
+        return Question(
+          bulgarianText: safeStr(q['bulgarian_text']),
+          pronunciation: safeStr(q['audio_text']),
+          optionsIt: safeList(q['options']),
+          optionsEn: safeList(q['options_en']),
+          answerIt: safeStr(q['correct_answer']),
+          answerEn: safeStr(q['correct_answer']),
+          questionTextIt: safeStr(q['question_it']).isNotEmpty
               ? safeStr(q['question_it'])
               : 'Come si dice?',
-          'domanda_en': q['question_en'], // Lasciamo raw per QuizScreen
-          'question_it': q['question_it'],
-          'question_en': q['question_en'],
-          'bulgaro': safeStr(q['bulgarian_text']),
-          'pronuncia': safeStr(q['audio_text']),
-          'opzioni': opzioni,
-          'opzioni_en': opzioniEn.isNotEmpty ? opzioniEn : null,
-          'soluzione': safeStr(q['correct_answer']),
-          'italiano': safeStr(q['correct_answer']),
-          'inglese': safeStr(q['correct_answer']),
-          'type': safeStr(q['type']), // Pass type (text/audio)
-        };
+          questionTextEn: safeStr(q['question_en']),
+          type: safeStr(q['type']),
+        );
       }).toList();
 
       final result = await Navigator.push(
@@ -104,7 +94,7 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
     }
 
     // Fallback to auto-generated quiz if no specific quiz data is provided
-    final questions = <Map<String, dynamic>>[];
+    final questions = <Question>[];
     final isEnglish = Localizations.localeOf(context).languageCode == 'en';
     final random = Random();
 
@@ -133,16 +123,16 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
       final options = [correctSound, wrong1, wrong2];
       options.shuffle(random);
 
-      questions.add({
-        'domanda': isEnglish ? 'What sound is this?' : 'Che suono è?',
-        'bulgaro': letter['character'],
-        'opzioni': options,
-        'soluzione': correctSound,
-        'pronuncia': '',
-        'italiano': correctSound, // Fallback for QuizScreen logic
-        'inglese': correctSound, // Fallback for QuizScreen logic
-        'type': 'text',
-      });
+      questions.add(
+        Question(
+          questionTextIt: isEnglish ? 'What sound is this?' : 'Che suono è?',
+          bulgarianText: letter['character'] ?? '',
+          optionsIt: options.cast<String>(),
+          answerIt: correctSound,
+          answerEn: correctSound,
+          type: 'text',
+        ),
+      );
     }
 
     // Add audio recognition questions if examples exist
@@ -161,18 +151,19 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
         if (options.length > 1) {
           // Only if we have options
           options.shuffle(random);
-          questions.add({
-            'domanda': isEnglish
-                ? 'Listen and choose the word'
-                : 'Ascolta e scegli la parola',
-            'bulgaro': '', // No text displayed, just audio
-            'pronuncia': example, // TTS reads this
-            'opzioni': options,
-            'soluzione': example,
-            'italiano': example,
-            'inglese': example,
-            'type': 'audio',
-          });
+          questions.add(
+            Question(
+              questionTextIt: isEnglish
+                  ? 'Listen and choose the word'
+                  : 'Ascolta e scegli la parola',
+              bulgarianText: '',
+              pronunciation: example, // TTS reads this
+              optionsIt: options.cast<String>(),
+              answerIt: example,
+              answerEn: example,
+              type: 'audio',
+            ),
+          );
         }
       }
     }
