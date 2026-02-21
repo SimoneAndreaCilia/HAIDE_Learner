@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../l10n/generated/app_localizations.dart';
 import 'quiz_screen.dart';
 import '../core/models/question.dart';
+import '../core/theme/quiz_theme.dart';
 import 'dart:math' as math;
 
 class UnitLessonsScreen extends StatelessWidget {
@@ -195,11 +196,13 @@ class UnitLessonsScreen extends StatelessWidget {
                 titoloLezione: title,
                 domande: questions,
                 tips: tips,
-                heroTag: heroTag,
-                lessonIcon: iconData,
-                topicColor: color,
+                theme: QuizTheme.fromTopic(
+                  primary: color,
+                  icon: iconData,
+                  heroTag: heroTag,
+                ),
                 unitId: unitId,
-                lessonId: lessonId, // Use passed parameter
+                lessonId: lessonId,
               ),
             ),
           );

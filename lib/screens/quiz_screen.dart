@@ -13,6 +13,7 @@ import '../providers/progress_provider.dart';
 import '../services/database_service.dart';
 import '../core/models/question.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/quiz_theme.dart';
 import '../providers/quiz_provider.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -21,9 +22,7 @@ class QuizScreen extends StatefulWidget {
   final List<Map<String, dynamic>>?
   tips; // Aggiunto parametro opzionale per i tips
   final bool isCustomQuiz;
-  final String? heroTag;
-  final IconData? lessonIcon;
-  final Color? topicColor;
+  final QuizTheme theme;
   final String? unitId;
   final String? lessonId;
 
@@ -33,9 +32,7 @@ class QuizScreen extends StatefulWidget {
     required this.domande,
     this.tips,
     this.isCustomQuiz = false,
-    this.heroTag,
-    this.lessonIcon,
-    this.topicColor,
+    this.theme = QuizTheme.defaultTheme,
     this.unitId,
     this.lessonId,
   });
@@ -675,16 +672,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
             end: Alignment.bottomCenter,
             colors: isDark
                 ? [
-                    widget.topicColor?.withValues(alpha: 0.35) ??
-                        AppColors.darkBg,
-                    widget.topicColor?.withValues(alpha: 0.10) ??
-                        AppColors.darkSurface,
+                    widget.theme.primary.withValues(alpha: 0.35),
+                    widget.theme.primary.withValues(alpha: 0.10),
                   ]
                 : [
-                    widget.topicColor?.withValues(alpha: 0.40) ??
-                        AppColors.cream,
-                    widget.topicColor?.withValues(alpha: 0.10) ??
-                        AppColors.parchment.withValues(alpha: 0.3),
+                    widget.theme.primary.withValues(alpha: 0.40),
+                    widget.theme.primary.withValues(alpha: 0.10),
                   ],
           ),
         ),
@@ -695,28 +688,29 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // HERO ANIMATION HEADER
-              if (widget.heroTag != null && widget.lessonIcon != null)
+              if (widget.theme.heroTag != null && widget.theme.icon != null)
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 20.0),
                     child: Hero(
-                      tag: widget.heroTag!,
+                      tag: widget.theme.heroTag!,
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: widget.topicColor ?? Colors.blue,
+                          color: widget.theme.primary,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: (widget.topicColor ?? Colors.blue)
-                                  .withValues(alpha: 0.4),
+                              color: widget.theme.primary.withValues(
+                                alpha: 0.4,
+                              ),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
                           ],
                         ),
                         child: Icon(
-                          widget.lessonIcon,
+                          widget.theme.icon,
                           color: Colors.white,
                           size: 40,
                         ),
@@ -766,9 +760,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkCard : Colors.white,
                   border: Border.all(
-                    color:
-                        widget.topicColor?.withValues(alpha: 0.5) ??
-                        (isDark ? AppColors.brown : AppColors.tan),
+                    color: widget.theme.primary.withValues(alpha: 0.5),
                     width: 1.5,
                   ),
                   borderRadius: BorderRadius.circular(16),
@@ -893,9 +885,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                           ? AppColors.darkCard
                           : Colors.white,
                       side: BorderSide(
-                        color:
-                            widget.topicColor?.withValues(alpha: 0.5) ??
-                            (isDark ? AppColors.brown : AppColors.tan),
+                        color: widget.theme.primary.withValues(alpha: 0.5),
                         width: 1.5,
                       ),
                       elevation: 3,
