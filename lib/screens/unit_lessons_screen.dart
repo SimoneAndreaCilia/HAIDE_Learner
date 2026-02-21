@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../l10n/generated/app_localizations.dart';
 import 'quiz_screen.dart';
+import '../core/models/question.dart';
 import 'dart:math' as math;
 
 class UnitLessonsScreen extends StatelessWidget {
@@ -124,7 +125,7 @@ class UnitLessonsScreen extends StatelessWidget {
 
                       final questions = List<Map<String, dynamic>>.from(
                         lessonData['questions'] ?? [],
-                      );
+                      ).map((q) => Question.fromMap(q)).toList();
 
                       final double top = (index * itemHeight) + 120;
 
@@ -170,7 +171,7 @@ class UnitLessonsScreen extends StatelessWidget {
     int index,
     String title,
     String description,
-    List<Map<String, dynamic>> questions,
+    List<Question> questions,
     Color color,
     IconData iconData,
     Map<String, dynamic> lessonData,

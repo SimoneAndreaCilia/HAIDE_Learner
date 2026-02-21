@@ -10,10 +10,11 @@ import 'dart:ui'; // Per ImageFilter
 import 'package:lottie/lottie.dart'; // Per animazioni fluide vettoriali
 import '../providers/progress_provider.dart';
 import '../services/database_service.dart';
+import '../core/models/question.dart';
 
 class QuizScreen extends StatefulWidget {
   final String titoloLezione;
-  final List<Map<String, dynamic>> domande;
+  final List<Question> domande;
   final List<Map<String, dynamic>>?
   tips; // Aggiunto parametro opzionale per i tips
   final bool isCustomQuiz;
@@ -52,7 +53,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   final GlobalKey<AnimazioneScossaState> _shakeKey =
       GlobalKey<AnimazioneScossaState>();
 
-  late List<Map<String, dynamic>> _domande;
+  late List<Question> _domande;
 
   // Animation for the tips lightbulb
   late AnimationController _tipsAnimController;
@@ -85,28 +86,8 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   }
 
   void _inizializzaDomande() {
-    // Creiamo una copia profonda delle domande per poter mischiare le opzioni
-    // senza modificare la lista originale (regola d'oro #1)
-    _domande = widget.domande.map((domanda) {
-      final nuovaDomanda = Map<String, dynamic>.from(domanda);
-
-      // Helper per mischiare una lista se esiste
-      void shuffleList(String key) {
-        if (nuovaDomanda[key] != null && nuovaDomanda[key] is List) {
-          final list = List<String>.from(nuovaDomanda[key]);
-          list.shuffle();
-          nuovaDomanda[key] = list;
-        }
-      }
-
-      // Mischia opzioni nuove e vecchie
-      shuffleList('opzioni');
-      shuffleList('opzioni_en');
-      shuffleList('options_it');
-      shuffleList('options_en');
-
-      return nuovaDomanda;
-    }).toList();
+    // Each Question is immutable — withShuffledOptions() returns a new instance
+    _domande = widget.domande.map((q) => q.withShuffledOptions()).toList();
   }
 
   void _configuraVoce() async {
@@ -123,13 +104,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     final isEnglish = languageProvider.currentLocale.languageCode == 'en';
     final domanda = _domande[_indiceDomanda];
 
-    String testoDaLeggere = '';
-
-    if (isEnglish) {
-      testoDaLeggere = domanda['pronuncia_en'] ?? domanda['pronuncia'] ?? '';
-    } else {
-      testoDaLeggere = domanda['pronuncia'] ?? '';
-    }
+    final testoDaLeggere = domanda.getPronunciation(isEnglish);
 
     if (testoDaLeggere.isNotEmpty) {
       await flutterTts.speak(testoDaLeggere);
@@ -607,65 +582,22 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final domandaCorrente = _domande[_indiceDomanda];
+    final q = _domande[_indiceDomanda];
 
-    // --- LOGICA IBRIDA ---
-    // 0. Recupera lingua corrente
+    // Recupera lingua corrente
     final languageProvider = Provider.of<LanguageProvider>(
       context,
       listen: false,
-    ); // O usa listen: true se vuoi rebuild al cambio lingua qui (ma non c'è tasto)
+    );
     final isEnglish = languageProvider.currentLocale.languageCode == 'en';
 
-    // 1. Dati comuni
-    final parolaBulgara = domandaCorrente['bulgaro'] ?? '?';
-    final pronuncia = domandaCorrente['pronuncia'] ?? '';
-
-    // Scelta opzioni in base alla lingua
-    List<String> opzioni = [];
-    if (isEnglish) {
-      if (domandaCorrente['options_en'] != null) {
-        opzioni = List<String>.from(domandaCorrente['options_en']);
-      } else if (domandaCorrente['opzioni_en'] != null) {
-        opzioni = List<String>.from(domandaCorrente['opzioni_en']);
-      } else {
-        // Fallback a italiano (nuovo o vecchio)
-        opzioni = List<String>.from(
-          domandaCorrente['options_it'] ?? domandaCorrente['opzioni'] ?? [],
-        );
-      }
-    } else {
-      opzioni = List<String>.from(
-        domandaCorrente['options_it'] ?? domandaCorrente['opzioni'] ?? [],
-      );
-    }
-
-    // 2. Controllo se c'è un'immagine
-    final String? immagineUrl = domandaCorrente['imgUrl'];
-
-    // 3. Determina la risposta corretta
-    String rispostaCorretta;
-    if (isEnglish) {
-      // Priorità chiavi inglesi poi fallback
-      rispostaCorretta =
-          domandaCorrente['answer_en'] ??
-          domandaCorrente['inglese'] ??
-          domandaCorrente['answer_it'] ??
-          domandaCorrente['soluzione'] ??
-          domandaCorrente['italiano'] ??
-          '';
-    } else {
-      // Priorità chiavi italiane
-      rispostaCorretta =
-          domandaCorrente['answer_it'] ??
-          domandaCorrente['soluzione'] ??
-          domandaCorrente['italiano'] ??
-          '';
-    }
-
-    // 4. Tipo di domanda (text, audio)
-    final String tipoDomanda = domandaCorrente['type'] ?? 'text';
-    final bool isAudioQuestion = tipoDomanda == 'audio';
+    // Typed accessors — zero fallback chains
+    final parolaBulgara = q.bulgarianText.isNotEmpty ? q.bulgarianText : '?';
+    final pronuncia = q.pronunciation;
+    final opzioni = q.getOptions(isEnglish);
+    final String? immagineUrl = q.imgUrl;
+    final rispostaCorretta = q.getAnswer(isEnglish);
+    final bool isAudioQuestion = q.type == 'audio';
 
     return Scaffold(
       appBar: AppBar(
@@ -799,20 +731,10 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               // Domanda: "Come si dice..." oppure "Cos'è questo?" oppure CUSTOM
               Builder(
                 builder: (context) {
-                  String questionText;
-                  if (isEnglish) {
-                    questionText =
-                        domandaCorrente['text_question_en'] ??
-                        domandaCorrente['question_en'] ??
-                        domandaCorrente['question'] ??
-                        (immagineUrl != null ? l10n.whatIsThis : l10n.howToSay);
-                  } else {
-                    questionText =
-                        domandaCorrente['text_question_it'] ??
-                        domandaCorrente['question_it'] ??
-                        domandaCorrente['question'] ??
-                        (immagineUrl != null ? l10n.whatIsThis : l10n.howToSay);
-                  }
+                  final modelText = q.getQuestionText(isEnglish);
+                  final questionText = modelText.isNotEmpty
+                      ? modelText
+                      : (immagineUrl != null ? l10n.whatIsThis : l10n.howToSay);
 
                   return Text(
                     questionText,
