@@ -11,6 +11,7 @@ import 'package:lottie/lottie.dart'; // Per animazioni fluide vettoriali
 import '../providers/progress_provider.dart';
 import '../services/database_service.dart';
 import '../core/models/question.dart';
+import '../core/theme/app_theme.dart';
 import '../providers/quiz_provider.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -296,7 +297,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900, // Molto grassetto (stile gaming)
-                  color: Color(0xFF4B4B4B), // Grigio scuro morbido
+                  color: AppColors.quizGray, // Grigio scuro morbido
                   // fontFamily: 'Nunito', // Consiglio: usa un font arrotondato se disponibile
                 ),
               ),
@@ -328,9 +329,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                   },
                   style:
                       ElevatedButton.styleFrom(
-                        backgroundColor: const Color(
-                          0xFFFF4B4B,
-                        ), // Rosso Duolingo
+                        backgroundColor: AppColors.errorRed, // Rosso Duolingo
                         foregroundColor: Colors.white,
                         elevation: 0, // Flat design ma con bordo sotto
                         shape: RoundedRectangleBorder(
