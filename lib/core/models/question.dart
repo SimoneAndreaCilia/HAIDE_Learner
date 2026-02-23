@@ -32,32 +32,17 @@ class Question {
   });
 
   /// Normalizes a Firestore [Map] from ANY known format into a typed [Question].
-  ///
-  /// Key resolution order (first non-null wins):
-  /// - Options IT: `options_it` → `opzioni`
-  /// - Options EN: `options_en` → `opzioni_en`
-  /// - Answer IT:  `answer_it` → `soluzione` → `italiano`
-  /// - Answer EN:  `answer_en` → `inglese`
-  /// - Question IT: `text_question_it` → `question_it` → `question` → `domanda`
-  /// - Question EN: `text_question_en` → `question_en` → `domanda_en`
   factory Question.fromMap(Map<String, dynamic> map) {
     return Question(
-      bulgarianText: _str(map['bulgaro']),
-      pronunciation: _str(map['pronuncia']),
-      pronunciationEn: map['pronuncia_en'] as String?,
-      optionsIt: _strList(map['options_it'] ?? map['opzioni']),
-      optionsEn: _strList(map['options_en'] ?? map['opzioni_en']),
-      answerIt: _str(map['answer_it'] ?? map['soluzione'] ?? map['italiano']),
-      answerEn: _str(map['answer_en'] ?? map['inglese']),
-      questionTextIt: _str(
-        map['text_question_it'] ??
-            map['question_it'] ??
-            map['question'] ??
-            map['domanda'],
-      ),
-      questionTextEn: _str(
-        map['text_question_en'] ?? map['question_en'] ?? map['domanda_en'],
-      ),
+      bulgarianText: _str(map['bulgarianText']),
+      pronunciation: _str(map['pronunciation']),
+      pronunciationEn: map['pronunciationEn'] as String?,
+      optionsIt: _strList(map['optionsIt']),
+      optionsEn: _strList(map['optionsEn']),
+      answerIt: _str(map['answerIt']),
+      answerEn: _str(map['answerEn']),
+      questionTextIt: _str(map['questionTextIt']),
+      questionTextEn: _str(map['questionTextEn']),
       type: _str(map['type']).isNotEmpty ? _str(map['type']) : 'text',
       imgUrl: map['imgUrl'] as String?,
     );

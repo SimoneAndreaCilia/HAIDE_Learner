@@ -5,15 +5,15 @@ void main() {
   group('Question.fromMap', () {
     test('parses new-format (courses) keys correctly', () {
       final map = {
-        'bulgaro': 'Здравей',
-        'pronuncia': 'Zdravey',
-        'pronuncia_en': 'Zdravey EN',
-        'options_it': ['Ciao', 'Arrivederci', 'Grazie'],
-        'options_en': ['Hello', 'Goodbye', 'Thanks'],
-        'answer_it': 'Ciao',
-        'answer_en': 'Hello',
-        'text_question_it': 'Come si dice?',
-        'text_question_en': 'How do you say?',
+        'bulgarianText': 'Здравей',
+        'pronunciation': 'Zdravey',
+        'pronunciationEn': 'Zdravey EN',
+        'optionsIt': ['Ciao', 'Arrivederci', 'Grazie'],
+        'optionsEn': ['Hello', 'Goodbye', 'Thanks'],
+        'answerIt': 'Ciao',
+        'answerEn': 'Hello',
+        'questionTextIt': 'Come si dice?',
+        'questionTextEn': 'How do you say?',
         'type': 'text',
         'imgUrl': 'https://example.com/img.png',
       };
@@ -31,48 +31,6 @@ void main() {
       expect(q.questionTextEn, 'How do you say?');
       expect(q.type, 'text');
       expect(q.imgUrl, 'https://example.com/img.png');
-    });
-
-    test('parses old-format (lezioni/alphabet) keys correctly', () {
-      final map = {
-        'bulgaro': 'Да',
-        'pronuncia': 'Da',
-        'opzioni': ['Sì', 'No', 'Forse'],
-        'opzioni_en': ['Yes', 'No', 'Maybe'],
-        'soluzione': 'Sì',
-        'inglese': 'Yes',
-        'question': 'Come si dice "Da"?',
-        'type': 'audio',
-      };
-
-      final q = Question.fromMap(map);
-
-      expect(q.bulgarianText, 'Да');
-      expect(q.pronunciation, 'Da');
-      expect(q.optionsIt, ['Sì', 'No', 'Forse']);
-      expect(q.optionsEn, ['Yes', 'No', 'Maybe']);
-      expect(q.answerIt, 'Sì');
-      expect(q.answerEn, 'Yes');
-      expect(q.questionTextIt, 'Come si dice "Da"?');
-      expect(q.type, 'audio');
-    });
-
-    test('new keys take priority over old keys', () {
-      final map = {
-        'options_it': ['Nuovo'],
-        'opzioni': ['Vecchio'],
-        'answer_it': 'Nuovo',
-        'soluzione': 'Vecchio',
-        'text_question_it': 'Domanda nuova',
-        'question': 'Domanda vecchia',
-        'bulgaro': 'Test',
-      };
-
-      final q = Question.fromMap(map);
-
-      expect(q.optionsIt, ['Nuovo']);
-      expect(q.answerIt, 'Nuovo');
-      expect(q.questionTextIt, 'Domanda nuova');
     });
 
     test('defaults to empty values when fields are missing', () {

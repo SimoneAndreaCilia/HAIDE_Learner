@@ -62,16 +62,16 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
 
       final questions = widget.quiz!.map((q) {
         return Question(
-          bulgarianText: safeStr(q['bulgarian_text']),
-          pronunciation: safeStr(q['audio_text']),
-          optionsIt: safeList(q['options']),
-          optionsEn: safeList(q['options_en']),
-          answerIt: safeStr(q['correct_answer']),
-          answerEn: safeStr(q['correct_answer']),
-          questionTextIt: safeStr(q['question_it']).isNotEmpty
-              ? safeStr(q['question_it'])
+          bulgarianText: safeStr(q['bulgarianText']),
+          pronunciation: safeStr(q['pronunciation']),
+          optionsIt: safeList(q['optionsIt']),
+          optionsEn: safeList(q['optionsEn']),
+          answerIt: safeStr(q['answerIt']),
+          answerEn: safeStr(q['answerEn']),
+          questionTextIt: safeStr(q['questionTextIt']).isNotEmpty
+              ? safeStr(q['questionTextIt'])
               : 'Come si dice?',
-          questionTextEn: safeStr(q['question_en']),
+          questionTextEn: safeStr(q['questionTextEn']),
           type: safeStr(q['type']),
         );
       }).toList();
