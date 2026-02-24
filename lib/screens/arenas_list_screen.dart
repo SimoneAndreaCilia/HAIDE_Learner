@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../providers/language_provider.dart'; // Import LanguageProvider
+import '../providers/progress_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/animated_sky_background.dart';
 
@@ -13,8 +13,9 @@ class ArenaData {
   final Map<String, String> descriptions;
   final String imagePath;
   final Color color;
-  final bool isLocked;
-  final double progress;
+
+  /// Total lessons in this arena (cached from Firestore content).
+  final int totalLessons;
 
   ArenaData({
     required this.id,
@@ -22,8 +23,7 @@ class ArenaData {
     required this.descriptions,
     required this.imagePath,
     required this.color,
-    required this.isLocked,
-    required this.progress,
+    required this.totalLessons,
   });
 
   String getTitle(String lang) => titles[lang] ?? titles['en'] ?? '';
@@ -103,29 +103,17 @@ class _ArenasListScreenState extends State<ArenasListScreen>
     _arenasFuture = _loadArenas();
   }
 
+  /// Loads arena structure + total lesson counts (cached once).
+  /// Progress is NOT baked in — it's computed live in build().
   Future<List<ArenaData>> _loadArenas() async {
     List<ArenaData> loadedArenas = [];
-    // bool previousLocked = false; // Removed unused
 
     for (int i = 0; i < _arenasBase.length; i++) {
       final data = _arenasBase[i];
       final id = data['id'] as String;
 
-      // Calculate lock state based on PREVIOUS arena's progress
-      // If it's the first arena, it's unlocked.
-      // If it's 2nd+, it's locked if prev arena is not complete.
-      bool isLocked = false;
-      if (i > 0) {
-        // Check previous arena
-        final prevId = _arenasBase[i - 1]['id'] as String;
-        final prevProgress = await _fetchProgressFull(prevId);
-        if (prevProgress < 1.0) {
-          isLocked = true;
-        }
-      }
-
-      // Fetch current progress
-      final progress = await _fetchProgressFull(id);
+      // Fetch total lessons count from Firestore content
+      final total = await _fetchTotalLessons(id);
 
       loadedArenas.add(
         ArenaData(
@@ -134,26 +122,22 @@ class _ArenasListScreenState extends State<ArenasListScreen>
           descriptions: data['descriptions'],
           imagePath: data['image'],
           color: data['color'],
-          isLocked: isLocked,
-          progress: progress,
+          totalLessons: total,
         ),
       );
     }
     return loadedArenas;
   }
 
-  Future<double> _fetchProgressFull(String unitId) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return 0.0;
-
+  /// Fetches the total number of lessons for a given arena from Firestore.
+  Future<int> _fetchTotalLessons(String unitId) async {
     try {
-      int total = 0;
       if (unitId == 'alphabet') {
         final snap = await FirebaseFirestore.instance
             .collection('alphabet_lessons')
             .count()
             .get();
-        total = snap.count ?? 0;
+        return snap.count ?? 0;
       } else {
         final snap = await FirebaseFirestore.instance
             .collection('courses')
@@ -161,23 +145,10 @@ class _ArenasListScreenState extends State<ArenasListScreen>
             .collection('lessons')
             .count()
             .get();
-        total = snap.count ?? 0;
+        return snap.count ?? 0;
       }
-
-      if (total == 0) return 0.0;
-
-      final progSnap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('learning_progress')
-          .doc(unitId)
-          .get();
-
-      if (!progSnap.exists) return 0.0;
-      final completed = progSnap.data()?['completed_lessons'] ?? 0;
-      return (completed / total).clamp(0.0, 1.0);
     } catch (e) {
-      return 0.0;
+      return 0;
     }
   }
 
@@ -251,18 +222,43 @@ class _ArenasListScreenState extends State<ArenasListScreen>
                       }
 
                       final arenas = snapshot.data!;
-                      return ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(
-                          20,
-                          0,
-                          20,
-                          100,
-                        ), // Bottom padding for nav bar
-                        itemCount: arenas.length,
-                        itemBuilder: (context, index) {
-                          return ArenaListCard(
-                            arena: arenas[index],
-                            onTap: () => _navigateToArena(arenas[index], index),
+
+                      // Wrap in Consumer so progress updates trigger rebuild
+                      return Consumer<ProgressProvider>(
+                        builder: (context, progressProvider, _) {
+                          return ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                            itemCount: arenas.length,
+                            itemBuilder: (context, index) {
+                              final arena = arenas[index];
+                              final completed = progressProvider
+                                  .getCompletedLessonsCount(arena.id);
+                              final progress = arena.totalLessons > 0
+                                  ? (completed / arena.totalLessons).clamp(
+                                      0.0,
+                                      1.0,
+                                    )
+                                  : 0.0;
+
+                              // Lock if previous arena isn't 100% complete
+                              bool isLocked = false;
+                              if (index > 0) {
+                                final prev = arenas[index - 1];
+                                final prevCompleted = progressProvider
+                                    .getCompletedLessonsCount(prev.id);
+                                final prevProgress = prev.totalLessons > 0
+                                    ? prevCompleted / prev.totalLessons
+                                    : 0.0;
+                                isLocked = prevProgress < 1.0;
+                              }
+
+                              return ArenaListCard(
+                                arena: arena,
+                                progress: progress,
+                                isLocked: isLocked,
+                                onTap: () => _navigateToArena(arena, index),
+                              );
+                            },
                           );
                         },
                       );
@@ -280,9 +276,17 @@ class _ArenasListScreenState extends State<ArenasListScreen>
 
 class ArenaListCard extends StatelessWidget {
   final ArenaData arena;
+  final double progress;
+  final bool isLocked;
   final VoidCallback onTap;
 
-  const ArenaListCard({super.key, required this.arena, required this.onTap});
+  const ArenaListCard({
+    super.key,
+    required this.arena,
+    required this.progress,
+    required this.isLocked,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -291,8 +295,6 @@ class ArenaListCard extends StatelessWidget {
     final isDarkMode = themeProvider.isDarkMode;
     final lang = languageProvider.currentLocale.languageCode;
 
-    // Se è bloccata, usiamo toni di grigio
-    final bool isLocked = arena.isLocked;
     final Color themeColor = isLocked ? Colors.grey : arena.color;
 
     return GestureDetector(
@@ -392,13 +394,13 @@ class ArenaListCard extends StatelessWidget {
                       alignment: Alignment.center,
                       children: [
                         CircularProgressIndicator(
-                          value: arena.progress,
+                          value: progress,
                           backgroundColor: themeColor.withValues(alpha: 0.2),
                           valueColor: AlwaysStoppedAnimation<Color>(themeColor),
                           strokeWidth: 5,
                         ),
                         Text(
-                          "${(arena.progress * 100).toInt()}%",
+                          "${(progress * 100).toInt()}%",
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,

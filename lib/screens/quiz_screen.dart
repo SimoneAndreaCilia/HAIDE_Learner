@@ -10,7 +10,6 @@ import 'package:flutter/services.dart'; // Per HapticFeedback
 import 'dart:ui'; // Per ImageFilter
 import 'package:lottie/lottie.dart'; // Per animazioni fluide vettoriali
 import '../providers/progress_provider.dart';
-import '../services/database_service.dart';
 import '../core/models/question.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/quiz_theme.dart';
@@ -405,16 +404,16 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
             onPressed: () async {
               // Save progress if IDs are present
               if (widget.unitId != null && widget.lessonId != null) {
-                // 2. Salva progresso locale (Shared Preferences)
-                Provider.of<ProgressProvider>(
+                // Unified save: ProgressProvider handles local + cloud
+                await Provider.of<ProgressProvider>(
                   context,
                   listen: false,
-                ).markLessonCompleted(widget.unitId!, widget.lessonId!);
-
-                // 3. Salva progresso Cloud (Firestore)
-                await DatabaseService().updateLessonProgress(
+                ).markLessonCompleted(
                   widget.unitId!,
-                ); // Salvo usando unitId come topic (es. "unit_01_survival")
+                  widget.lessonId!,
+                  score: provider.score,
+                  totalQuestions: provider.totalQuestions,
+                );
               }
 
               if (ctx.mounted) {
