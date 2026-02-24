@@ -258,9 +258,12 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
                       // If completed (last page is the completion card)
                       if (idx == widget.letters.length) {
                         await prefs.setInt(key, widget.letters.length);
-                        // ADDED: Save to Firestore
+                        // ADDED: Save to Firestore with granular score
                         await DatabaseService().updateLessonProgress(
                           widget.lessonId,
+                          lessonId: widget.lessonId,
+                          score: widget.letters.length,
+                          totalQuestions: widget.letters.length,
                         );
                         // ADDED: Save global 'alphabet' progress for Home Card
                         await DatabaseService().updateLessonProgress(

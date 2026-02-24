@@ -2,17 +2,121 @@ rules_version='2'
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 1, 24);
+
+    // =========================================================================
+    // FUNZIONI HELPER
+    // =========================================================================
+
+    // L'utente è autenticato e sta accedendo ai propri dati
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Verifica che il campo esista nel documento risultante
+    function hasField(field) {
+      return field in request.resource.data;
+    }
+
+    // =========================================================================
+    // USER DATA — Owner-only, no delete
+    // =========================================================================
+    match /users/{uid} {
+
+      // READ: solo il proprietario
+      allow read: if isOwner(uid);
+
+      // CREATE: solo al primo accesso (splash_screen.dart)
+      allow create: if isOwner(uid)
+        && hasField('uid')
+        && request.resource.data.uid is string
+        && hasField('created_at')
+        && hasField('is_anonymous')
+        && request.resource.data.is_anonymous is bool;
+
+      // UPDATE: solo il proprietario, con validazione per campo
+      allow update: if isOwner(uid)
+        // XP: se presente, deve essere int >= 0
+        && (!hasField('xp') || request.resource.data.xp is int)
+        && (!hasField('xp') || request.resource.data.xp >= 0)
+        // Streak: se presente, deve essere int >= 0
+        && (!hasField('current_streak') || request.resource.data.current_streak is int)
+        && (!hasField('current_streak') || request.resource.data.current_streak >= 0)
+        // Username: se presente, deve essere string <= 50 chars
+        && (!hasField('username') || request.resource.data.username is string)
+        && (!hasField('username') || request.resource.data.username.size() <= 50)
+        // Avatar: se presente, deve essere string <= 30 chars
+        && (!hasField('avatar_id') || request.resource.data.avatar_id is string)
+        && (!hasField('avatar_id') || request.resource.data.avatar_id.size() <= 30)
+        // UID non modificabile dopo creazione
+        && (!hasField('uid') || request.resource.data.uid == resource.data.uid);
+
+      // DELETE: bloccato — l'app non cancella mai documenti utente
+      allow delete: if false;
+
+      // --- LEARNING PROGRESS ---
+      match /learning_progress/{topicId} {
+        allow read: if isOwner(uid);
+
+        allow create: if isOwner(uid)
+          && hasField('completed_lessons')
+          && request.resource.data.completed_lessons is int
+          && request.resource.data.completed_lessons >= 0;
+
+        allow update: if isOwner(uid)
+          && (!hasField('completed_lessons') || request.resource.data.completed_lessons is int)
+          && (!hasField('completed_lessons') || request.resource.data.completed_lessons >= 0);
+
+        allow delete: if false;
+
+        // --- PER-LESSON SCORES ---
+        match /lessons/{lessonId} {
+          allow read: if isOwner(uid);
+
+          allow create: if isOwner(uid)
+            && hasField('completed')
+            && request.resource.data.completed is bool
+            && hasField('best_score')
+            && request.resource.data.best_score is int
+            && request.resource.data.best_score >= 0
+            && request.resource.data.best_score <= 100
+            && hasField('total_questions')
+            && request.resource.data.total_questions is int
+            && request.resource.data.total_questions >= 0
+            && request.resource.data.total_questions <= 100
+            && hasField('attempts')
+            && request.resource.data.attempts is int
+            && request.resource.data.attempts >= 1;
+
+          allow update: if isOwner(uid)
+            && (!hasField('best_score') || request.resource.data.best_score is int)
+            && (!hasField('best_score') || request.resource.data.best_score >= 0)
+            && (!hasField('best_score') || request.resource.data.best_score <= 100)
+            && (!hasField('total_questions') || request.resource.data.total_questions is int)
+            && (!hasField('total_questions') || request.resource.data.total_questions >= 0)
+            && (!hasField('attempts') || request.resource.data.attempts is int)
+            && (!hasField('attempts') || request.resource.data.attempts >= 1);
+
+          allow delete: if false;
+        }
+      }
+    }
+
+    // =========================================================================
+    // CONTENT — Read-only, percorsi espliciti (NO wildcard ricorsivi)
+    // =========================================================================
+
+    // Corsi tematici: courses/{unitId} e courses/{unitId}/lessons/{lessonId}
+    match /courses/{unitId} {
+      allow read: if request.auth != null;
+
+      match /lessons/{lessonId} {
+        allow read: if request.auth != null;
+      }
+    }
+
+    // Lezioni alfabeto (documenti flat, nessuna subcollection)
+    match /alphabet_lessons/{docId} {
+      allow read: if request.auth != null;
     }
   }
 }

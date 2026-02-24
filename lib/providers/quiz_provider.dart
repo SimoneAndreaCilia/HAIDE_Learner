@@ -17,6 +17,10 @@ class QuizProvider extends ChangeNotifier {
   bool _isGameOver = false;
   AnswerResult? _lastResult;
 
+  /// True if the user already gave a wrong answer on the current question.
+  /// Once set, a correct retry will NOT increment the score.
+  bool _wrongOnCurrent = false;
+
   // ---------------------------------------------------------------------------
   // Getters (read-only)
   // ---------------------------------------------------------------------------
@@ -52,6 +56,7 @@ class QuizProvider extends ChangeNotifier {
     _answerGiven = false;
     _isGameOver = false;
     _lastResult = null;
+    _wrongOnCurrent = false;
     notifyListeners();
   }
 
@@ -69,9 +74,13 @@ class QuizProvider extends ChangeNotifier {
     _answerGiven = true;
 
     if (choice == correct) {
-      _score++;
+      // Only award points if this is the first attempt on this question
+      if (!_wrongOnCurrent) {
+        _score++;
+      }
       _lastResult = AnswerResult.correct;
     } else {
+      _wrongOnCurrent = true;
       _lives--;
       if (_lives <= 0) {
         _isGameOver = true;
@@ -95,6 +104,7 @@ class QuizProvider extends ChangeNotifier {
       _currentIndex++;
       _answerGiven = false;
       _lastResult = null;
+      _wrongOnCurrent = false;
       notifyListeners();
       return true;
     }
@@ -107,6 +117,7 @@ class QuizProvider extends ChangeNotifier {
   void clearAnswerState() {
     _answerGiven = false;
     _lastResult = null;
+    // NOTE: _wrongOnCurrent intentionally NOT reset — stays true for this question
     notifyListeners();
   }
 
@@ -119,6 +130,7 @@ class QuizProvider extends ChangeNotifier {
     _answerGiven = false;
     _isGameOver = false;
     _lastResult = null;
+    _wrongOnCurrent = false;
     notifyListeners();
   }
 }

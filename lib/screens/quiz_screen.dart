@@ -409,11 +409,19 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                 Provider.of<ProgressProvider>(
                   context,
                   listen: false,
-                ).markLessonCompleted(widget.unitId!, widget.lessonId!);
+                ).markLessonCompleted(
+                  widget.unitId!,
+                  widget.lessonId!,
+                  score: provider.score,
+                  totalQuestions: provider.totalQuestions,
+                );
 
                 // 3. Salva progresso Cloud (Firestore)
                 await DatabaseService().updateLessonProgress(
                   widget.unitId!,
+                  lessonId: widget.lessonId!,
+                  score: provider.score,
+                  totalQuestions: provider.totalQuestions,
                 ); // Salvo usando unitId come topic (es. "unit_01_survival")
               }
 
