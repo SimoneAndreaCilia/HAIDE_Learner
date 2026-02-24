@@ -151,6 +151,54 @@ class DatabaseService {
         );
   }
 
+  // ---------------------------------------------------------------------------
+  // 1c. BULK READERS (for hydrate / sync)
+  // ---------------------------------------------------------------------------
+
+  /// Returns all topicIds that have progress documents for the current user.
+  Future<List<String>> getKnownTopicIds() async {
+    final user = _auth.currentUser;
+    if (user == null) return [];
+
+    final snapshot = await _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('learning_progress')
+        .get();
+
+    return snapshot.docs.map((doc) => doc.id).toList();
+  }
+
+  /// Downloads ALL per-lesson scores across ALL topics for the current user.
+  ///
+  /// Returns a map of `topicId → List<LessonScore>`.
+  /// Used by [ProgressProvider] to hydrate from Firestore on cold start.
+  Future<Map<String, List<LessonScore>>> getAllLessonScores() async {
+    final user = _auth.currentUser;
+    if (user == null) return {};
+
+    final Map<String, List<LessonScore>> result = {};
+
+    final topicIds = await getKnownTopicIds();
+    for (final topicId in topicIds) {
+      final lessonsSnapshot = await _db
+          .collection('users')
+          .doc(user.uid)
+          .collection('learning_progress')
+          .doc(topicId)
+          .collection('lessons')
+          .get();
+
+      if (lessonsSnapshot.docs.isNotEmpty) {
+        result[topicId] = lessonsSnapshot.docs
+            .map((doc) => LessonScore.fromMap(doc.id, doc.data()))
+            .toList();
+      }
+    }
+
+    return result;
+  }
+
   // --- LOGICA PRIVATA PER LO STREAK (Giorni consecutivi) ---
   Future<void> _updateUserStreak(String uid) async {
     final userDocRef = _db.collection('users').doc(uid);

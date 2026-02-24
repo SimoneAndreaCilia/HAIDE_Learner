@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../l10n/generated/app_localizations.dart';
-import '../services/database_service.dart';
+import '../providers/progress_provider.dart';
 import '../widgets/animated_sky_background.dart';
 import 'quiz_screen.dart';
 import '../core/models/question.dart';
@@ -83,6 +84,8 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
             titoloLezione: '${widget.title} Quiz',
             domande: questions,
             isCustomQuiz: true,
+            unitId: 'alphabet',
+            lessonId: widget.lessonId,
           ),
         ),
       );
@@ -178,6 +181,8 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
         builder: (_) => QuizScreen(
           titoloLezione: '${widget.title} Quiz',
           domande: questions,
+          unitId: 'alphabet',
+          lessonId: widget.lessonId,
         ),
       ),
     );
@@ -258,16 +263,15 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
                       // If completed (last page is the completion card)
                       if (idx == widget.letters.length) {
                         await prefs.setInt(key, widget.letters.length);
-                        // ADDED: Save to Firestore with granular score
-                        await DatabaseService().updateLessonProgress(
+                        // Unified save: ProgressProvider handles local + cloud
+                        await Provider.of<ProgressProvider>(
+                          context,
+                          listen: false,
+                        ).markLessonCompleted(
+                          'alphabet',
                           widget.lessonId,
-                          lessonId: widget.lessonId,
                           score: widget.letters.length,
                           totalQuestions: widget.letters.length,
-                        );
-                        // ADDED: Save global 'alphabet' progress for Home Card
-                        await DatabaseService().updateLessonProgress(
-                          'alphabet',
                         );
                       }
                     }

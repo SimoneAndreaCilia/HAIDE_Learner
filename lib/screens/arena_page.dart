@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/arena_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/language_provider.dart';
+import '../providers/progress_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'alphabet_list_screen.dart';
 import 'unit_lessons_screen.dart';
@@ -109,9 +109,6 @@ class ArenaPageState extends State<ArenaPage>
   }
 
   Future<double> _fetchProgressFull(String unitId) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return 0.0;
-
     try {
       int total = 0;
       if (unitId == 'alphabet') {
@@ -132,15 +129,12 @@ class ArenaPageState extends State<ArenaPage>
 
       if (total == 0) return 0.0;
 
-      final progSnap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('learning_progress')
-          .doc(unitId)
-          .get();
+      // Read completed count from ProgressProvider (single source of truth)
+      final completed = Provider.of<ProgressProvider>(
+        context,
+        listen: false,
+      ).getCompletedLessonsCount(unitId);
 
-      if (!progSnap.exists) return 0.0;
-      final completed = progSnap.data()?['completed_lessons'] ?? 0;
       return (completed / total).clamp(0.0, 1.0);
     } catch (e) {
       return 0.0;
@@ -448,29 +442,17 @@ class _ArenaProgressLoaderState extends State<_ArenaProgressLoader> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return widget.builder(context, 0.0, true);
-    }
-
     return FutureBuilder<int>(
       future: _totalLessonsFuture,
       builder: (context, snapshotTotal) {
         final total = snapshotTotal.data ?? 1;
 
-        return StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .collection('learning_progress')
-              .doc(widget.unitId)
-              .snapshots(),
-          builder: (context, snapshot) {
-            int completed = 0;
-            if (snapshot.hasData && snapshot.data!.exists) {
-              final data = snapshot.data!.data() as Map<String, dynamic>;
-              completed = data['completed_lessons'] ?? 0;
-            }
+        // Read completed count from ProgressProvider (reactive)
+        return Consumer<ProgressProvider>(
+          builder: (context, progressProvider, _) {
+            final completed = progressProvider.getCompletedLessonsCount(
+              widget.unitId,
+            );
 
             double progress = (total > 0)
                 ? (completed / total).clamp(0.0, 1.0)
