@@ -49,7 +49,8 @@ class QuizProvider extends ChangeNotifier {
 
   /// Initializes or resets the quiz with new questions (shuffled options).
   void initQuiz(List<Question> questions) {
-    _questions = questions.map((q) => q.withShuffledOptions()).toList();
+    final shuffledQuestions = List<Question>.from(questions)..shuffle();
+    _questions = shuffledQuestions.map((q) => q.withShuffledOptions()).toList();
     _currentIndex = 0;
     _score = 0;
     _lives = 3;
@@ -123,6 +124,7 @@ class QuizProvider extends ChangeNotifier {
 
   /// Full reset for "Retry" after game over — re-shuffles questions.
   void resetForRetry() {
+    _questions.shuffle();
     _questions = _questions.map((q) => q.withShuffledOptions()).toList();
     _currentIndex = 0;
     _score = 0;
