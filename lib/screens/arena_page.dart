@@ -129,6 +129,7 @@ class ArenaPageState extends State<ArenaPage>
 
       if (total == 0) return 0.0;
 
+      if (!mounted) return 0.0;
       // Read completed count from ProgressProvider (single source of truth)
       final completed = Provider.of<ProgressProvider>(
         context,

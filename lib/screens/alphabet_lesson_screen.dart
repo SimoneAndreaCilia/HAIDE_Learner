@@ -263,6 +263,7 @@ class _AlphabetLessonScreenState extends State<AlphabetLessonScreen> {
                       // If completed (last page is the completion card)
                       if (idx == widget.letters.length) {
                         await prefs.setInt(key, widget.letters.length);
+                        if (!context.mounted) return;
                         // Unified save: ProgressProvider handles local + cloud
                         await Provider.of<ProgressProvider>(
                           context,
