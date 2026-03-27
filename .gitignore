@@ -125,3 +125,5 @@ ios/Runner/GoogleService-Info.plist
 
 # Script & Backup Firestore (Contiene JSON Backup e Service Account Keys)
 scripts/firestore_backup/
+
+HAIDE_Learner_Architecture_Summary.md
