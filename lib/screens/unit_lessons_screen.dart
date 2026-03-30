@@ -92,7 +92,8 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
 
           const double itemHeight = 140.0;
           const double amplitude = 70.0;
-          final double totalHeight = documents.length * itemHeight + 280;
+          final double calculatedHeight = documents.length * itemHeight + 280;
+          final double totalHeight = math.max(size.height, calculatedHeight);
 
           return Stack(
             children: [
