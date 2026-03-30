@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../widgets/lesson_top_bar.dart';
 import 'quiz_screen.dart';
 import '../core/models/question.dart';
 import '../core/theme/quiz_theme.dart';
@@ -52,36 +53,6 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          widget.title,
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(
-          color: Colors.white,
-          shadows: [
-            Shadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('courses')
@@ -190,10 +161,8 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                             (size.width / 2 - 40) +
                             (amplitude * math.sin(index * 2.5));
 
-                        final iconData =
-                            _getLessonIconData(lessonTitle, index);
-                        final heroTag =
-                            'lesson_icon_${widget.unitId}_$index';
+                        final iconData = _getLessonIconData(lessonTitle, index);
+                        final heroTag = 'lesson_icon_${widget.unitId}_$index';
 
                         return Positioned(
                           top: top,
@@ -218,6 +187,14 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                     ],
                   ),
                 ),
+              ),
+
+              // LAYER 3: Fixed top bar
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: LessonTopBar(title: widget.title, isDark: isDark),
               ),
             ],
           );
@@ -355,16 +332,16 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                                   ? null
                                   : [
                                       Shadow(
-                                        color:
-                                            Colors.white.withValues(alpha: 0.8),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.8,
+                                        ),
                                         blurRadius: 2,
                                       ),
                                     ],
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            textAlign:
-                                isLeft ? TextAlign.start : TextAlign.end,
+                            textAlign: isLeft ? TextAlign.start : TextAlign.end,
                           ),
                           if (description.isNotEmpty)
                             Text(
@@ -377,8 +354,9 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              textAlign:
-                                  isLeft ? TextAlign.start : TextAlign.end,
+                              textAlign: isLeft
+                                  ? TextAlign.start
+                                  : TextAlign.end,
                             ),
                         ],
                       ),
