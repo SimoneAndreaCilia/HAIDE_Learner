@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 
 enum LessonNodeState { locked, current, completed }
 
@@ -178,87 +177,7 @@ class _LessonNodeButtonState extends State<LessonNodeButton>
               );
             },
           ),
-
-          // ---- LESSON LABEL CARD WITH GLASSMORPHISM ----
-          Positioned(
-            // Move label slightly down when pressed to match button
-            top: 20 + currentPush * 0.5,
-            left: widget.isLeft ? 100 : -140,
-            child: _buildLabelCard(),
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLabelCard() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: 130,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: widget.isDark
-                ? Colors.black.withValues(alpha: 0.45)
-                : Colors.white.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: widget.isDark
-                  ? Colors.white.withValues(alpha: 0.15)
-                  : Colors.white.withValues(alpha: 0.6),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: widget.isDark ? Colors.white : Colors.black87,
-                  shadows: widget.isDark
-                      ? null
-                      : [
-                          Shadow(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            blurRadius: 2,
-                          ),
-                        ],
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: widget.isLeft ? TextAlign.start : TextAlign.end,
-              ),
-              if (widget.description.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2.0),
-                  child: Text(
-                    widget.description,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: widget.isDark
-                          ? Colors.grey[300]
-                          : Colors.grey[700],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: widget.isLeft ? TextAlign.start : TextAlign.end,
-                  ),
-                ),
-            ],
-          ),
-        ),
       ),
     );
   }

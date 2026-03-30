@@ -9,6 +9,7 @@ import '../widgets/lesson_landscape_background.dart';
 import 'package:provider/provider.dart';
 import '../providers/progress_provider.dart';
 import '../widgets/lesson_node_button.dart';
+import '../widgets/lesson_popup_bubble.dart';
 import 'dart:math' as math;
 
 class UnitLessonsScreen extends StatefulWidget {
@@ -31,6 +32,7 @@ class UnitLessonsScreen extends StatefulWidget {
 
 class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
   final ScrollController _scrollController = ScrollController();
+  int? _selectedLessonIndex;
 
   @override
   void initState() {
@@ -119,7 +121,9 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
               // LAYER 2: Scrollable content (path + nodes)
               SingleChildScrollView(
                 controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
+                physics: _selectedLessonIndex != null
+                    ? const NeverScrollableScrollPhysics()
+                    : const BouncingScrollPhysics(),
                 child: SizedBox(
                   height: totalHeight,
                   width: size.width,
@@ -154,10 +158,6 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                         if (isEnglish && lessonData['description_en'] != null) {
                           lessonDesc = lessonData['description_en'];
                         }
-
-                        final questions = List<Map<String, dynamic>>.from(
-                          lessonData['questions'] ?? [],
-                        ).map((q) => Question.fromMap(q)).toList();
 
                         final double top = (index * itemHeight) + 200;
 
@@ -196,19 +196,20 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                             index,
                             lessonTitle,
                             lessonDesc,
-                            questions,
                             widget.topicColor,
                             iconData,
-                            lessonData,
-                            l10n,
                             heroTag,
                             isDark,
                             index % 2 == 0,
                             lessonId,
                             nodeState,
+                            itemHeight,
+                            totalHeight,
                           ),
                         );
                       }),
+
+
                     ],
                   ),
                 ),
@@ -220,6 +221,180 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                 left: 0,
                 right: 0,
                 child: LessonTopBar(title: widget.title, isDark: isDark),
+              ),
+
+              // LAYER 4: Dimming overlay
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: _selectedLessonIndex == null,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 300),
+                    opacity: _selectedLessonIndex == null ? 0.0 : 1.0,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedLessonIndex = null;
+                        });
+                      },
+                      child: Container(
+                        color: Colors.black.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // LAYER 5: Redrawn node + Popup (with animation)
+              Positioned.fill(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutBack,
+                          ),
+                        ),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: (_selectedLessonIndex == null ||
+                          _selectedLessonIndex! >= documents.length)
+                      ? const SizedBox.shrink(key: ValueKey('empty_popup'))
+                      : Builder(
+                          key: ValueKey('lesson_overlay_${_selectedLessonIndex}'),
+                          builder: (context) {
+                            final index = _selectedLessonIndex!;
+                            final lessonData =
+                                documents[index].data() as Map<String, dynamic>;
+
+                            String lessonTitle = lessonData['title'] ?? 'Lesson';
+                            if (isEnglish && lessonData['title_en'] != null) {
+                              lessonTitle = lessonData['title_en'];
+                            }
+
+                            String lessonDesc = lessonData['description'] ?? '';
+                            if (isEnglish && lessonData['description_en'] != null) {
+                              lessonDesc = lessonData['description_en'];
+                            }
+
+                            final double topInCanvas = (index * itemHeight) + 200;
+                            final double scrollOffset = _scrollController.hasClients
+                                ? _scrollController.offset
+                                : 0.0;
+                            final double topOnScreen = topInCanvas - scrollOffset;
+
+                            final double left = (size.width / 2 - 40) +
+                                (amplitude * math.sin(index * 2.5));
+
+                            final iconData = _getLessonIconData(lessonTitle, index);
+                            final heroTag =
+                                'lesson_icon_overlay_${widget.unitId}_$index';
+                            final lessonId = documents[index].id;
+
+                            final isCompleted =
+                                progress.isLessonCompleted(widget.unitId, lessonId);
+
+                            bool isUnlocked;
+                            if (index == 0) {
+                              isUnlocked = true;
+                            } else {
+                              final prevLessonId = documents[index - 1].id;
+                              isUnlocked = progress.isLessonCompleted(
+                                  widget.unitId, prevLessonId);
+                            }
+
+                            LessonNodeState nodeState;
+                            if (isCompleted) {
+                              nodeState = LessonNodeState.completed;
+                            } else if (isUnlocked) {
+                              nodeState = LessonNodeState.current;
+                            } else {
+                              nodeState = LessonNodeState.locked;
+                            }
+
+                            final questions = List<Map<String, dynamic>>.from(
+                              lessonData['questions'] ?? [],
+                            ).map((q) => Question.fromMap(q)).toList();
+
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                // 1. Redrawn Selected Node
+                                Positioned(
+                                  top: topOnScreen,
+                                  left: left,
+                                  child: _buildLessonNode(
+                                    context,
+                                    index,
+                                    lessonTitle,
+                                    lessonDesc,
+                                    widget.topicColor,
+                                    iconData,
+                                    heroTag,
+                                    isDark,
+                                    index % 2 == 0,
+                                    lessonId,
+                                    nodeState,
+                                    itemHeight,
+                                    totalHeight,
+                                  ),
+                                ),
+                                // 2. Lesson Popup
+                                Positioned(
+                                  top: topOnScreen + 95,
+                                  left: left - 80,
+                                  child: LessonPopupBubble(
+                                    title: lessonTitle,
+                                    description: lessonDesc,
+                                    primaryColor: widget.topicColor,
+                                    isDark: isDark,
+                                    startText: isEnglish
+                                        ? 'START LESSON'
+                                        : 'INIZIA LEZIONE',
+                                    onStart: () {
+                                      if (questions.isNotEmpty) {
+                                        final tips = lessonData['tips'] != null
+                                            ? List<Map<String, dynamic>>.from(
+                                                lessonData['tips'])
+                                            : null;
+
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => QuizScreen(
+                                              titoloLezione: lessonTitle,
+                                              domande: questions,
+                                              tips: tips,
+                                              theme: QuizTheme.fromTopic(
+                                                primary: widget.topicColor,
+                                                icon: iconData,
+                                                heroTag: heroTag,
+                                              ),
+                                              unitId: widget.unitId,
+                                              lessonId: lessonId,
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(l10n.lessonEmpty),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                ),
               ),
             ],
           );
@@ -233,16 +408,15 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
     int index,
     String title,
     String description,
-    List<Question> questions,
     Color color,
     IconData iconData,
-    Map<String, dynamic> lessonData,
-    AppLocalizations l10n,
     String heroTag,
     bool isDark,
     bool isLeft,
     String? lessonId,
     LessonNodeState state,
+    double itemHeight,
+    double totalHeight,
   ) {
     return LessonNodeButton(
       title: title,
@@ -254,32 +428,27 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
       isDark: isDark,
       isLeft: isLeft,
       onTap: () {
-        if (questions.isNotEmpty) {
-          final tips = lessonData['tips'] != null
-              ? List<Map<String, dynamic>>.from(lessonData['tips'])
-              : null;
+        if (state != LessonNodeState.locked) {
+          setState(() {
+            if (_selectedLessonIndex == index) {
+              _selectedLessonIndex = null;
+            } else {
+              _selectedLessonIndex = index;
 
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => QuizScreen(
-                titoloLezione: title,
-                domande: questions,
-                tips: tips,
-                theme: QuizTheme.fromTopic(
-                  primary: color,
-                  icon: iconData,
-                  heroTag: heroTag,
-                ),
-                unitId: widget.unitId,
-                lessonId: lessonId,
-              ),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(l10n.lessonEmpty)));
+              // UX REFINEMENT: Scroll to center
+              final double top = (index * itemHeight) + 200;
+              final size = MediaQuery.of(context).size;
+              final double targetOffset =
+                  top - (size.height / 2) + (itemHeight / 2);
+              final double maxScroll = math.max(0.0, totalHeight - size.height);
+
+              _scrollController.animateTo(
+                targetOffset.clamp(0.0, maxScroll),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            }
+          });
         }
       },
     );
