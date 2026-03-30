@@ -4,9 +4,11 @@ import '../l10n/generated/app_localizations.dart';
 import 'quiz_screen.dart';
 import '../core/models/question.dart';
 import '../core/theme/quiz_theme.dart';
+import '../widgets/lesson_landscape_background.dart';
 import 'dart:math' as math;
+import 'dart:ui';
 
-class UnitLessonsScreen extends StatelessWidget {
+class UnitLessonsScreen extends StatefulWidget {
   final String unitId;
   final String title;
   final String description;
@@ -21,6 +23,28 @@ class UnitLessonsScreen extends StatelessWidget {
   });
 
   @override
+  State<UnitLessonsScreen> createState() => _UnitLessonsScreenState();
+}
+
+class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      // Trigger repaint of the landscape background
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -31,138 +55,173 @@ class UnitLessonsScreen extends StatelessWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
-          title,
-          style: const TextStyle(
+          widget.title,
+          style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
         ),
         centerTitle: true,
-        backgroundColor: topicColor.withValues(alpha: 0.9),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
+        iconTheme: IconThemeData(
+          color: Colors.white,
+          shadows: [
+            Shadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('courses')
-              .doc(unitId)
-              .collection('lessons')
-              .orderBy('order')
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            }
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('courses')
+            .doc(widget.unitId)
+            .collection('lessons')
+            .orderBy('order')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            final documents = snapshot.data!.docs;
+          final documents = snapshot.data!.docs;
 
-            if (documents.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.school_outlined,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.lessonEmpty,
-                      style: const TextStyle(color: Colors.grey, fontSize: 16),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            const double itemHeight = 140.0;
-            const double amplitude = 70.0;
-            final double totalHeight = documents.length * itemHeight + 200;
-
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: SizedBox(
-                height: totalHeight,
-                width: size.width,
-                child: Stack(
-                  children: [
-                    // PERCORSO
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: LevelPathPainter(
-                          itemCount: documents.length,
-                          itemHeight: itemHeight,
-                          amplitude: amplitude,
-                          pathColor: isDark
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade300,
-                          isDark: isDark,
-                        ),
-                      ),
-                    ),
-
-                    // NODI
-                    ...List.generate(documents.length, (index) {
-                      final lessonData =
-                          documents[index].data() as Map<String, dynamic>;
-
-                      String lessonTitle = lessonData['title'] ?? 'Lesson';
-                      if (isEnglish && lessonData['title_en'] != null) {
-                        lessonTitle = lessonData['title_en'];
-                      }
-
-                      String lessonDesc = lessonData['description'] ?? '';
-                      if (isEnglish && lessonData['description_en'] != null) {
-                        lessonDesc = lessonData['description_en'];
-                      }
-
-                      final questions = List<Map<String, dynamic>>.from(
-                        lessonData['questions'] ?? [],
-                      ).map((q) => Question.fromMap(q)).toList();
-
-                      final double top = (index * itemHeight) + 120;
-
-                      final double left =
-                          (size.width / 2 - 40) +
-                          (amplitude * math.sin(index * 2.5));
-
-                      final iconData = _getLessonIconData(lessonTitle, index);
-                      final heroTag = 'lesson_icon_${unitId}_$index';
-
-                      return Positioned(
-                        top: top,
-                        left: left,
-                        child: _buildLessonNode(
-                          context,
-                          index,
-                          lessonTitle,
-                          lessonDesc,
-                          questions,
-                          topicColor,
-                          iconData,
-                          lessonData,
-                          l10n,
-                          heroTag,
-                          isDark,
-                          index % 2 == 0,
-                          documents[index].id,
-                        ),
-                      );
-                    }),
-                  ],
-                ),
+          if (documents.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.school_outlined,
+                    size: 64,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.lessonEmpty,
+                    style: const TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
+                ],
               ),
             );
-          },
-        ),
+          }
+
+          const double itemHeight = 140.0;
+          const double amplitude = 70.0;
+          final double totalHeight = documents.length * itemHeight + 200;
+
+          return Stack(
+            children: [
+              // LAYER 1: Landscape background with parallax
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _scrollController,
+                  builder: (context, _) {
+                    return LessonLandscapeBackground(
+                      scrollOffset: _scrollController.hasClients
+                          ? _scrollController.offset
+                          : 0.0,
+                      totalHeight: totalHeight,
+                      isDark: isDark,
+                    );
+                  },
+                ),
+              ),
+
+              // LAYER 2: Scrollable content (path + nodes)
+              SingleChildScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                child: SizedBox(
+                  height: totalHeight,
+                  width: size.width,
+                  child: Stack(
+                    children: [
+                      // PERCORSO
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: LevelPathPainter(
+                            itemCount: documents.length,
+                            itemHeight: itemHeight,
+                            amplitude: amplitude,
+                            pathColor: isDark
+                                ? Colors.white.withValues(alpha: 0.15)
+                                : Colors.white.withValues(alpha: 0.35),
+                            isDark: isDark,
+                          ),
+                        ),
+                      ),
+
+                      // NODI
+                      ...List.generate(documents.length, (index) {
+                        final lessonData =
+                            documents[index].data() as Map<String, dynamic>;
+
+                        String lessonTitle = lessonData['title'] ?? 'Lesson';
+                        if (isEnglish && lessonData['title_en'] != null) {
+                          lessonTitle = lessonData['title_en'];
+                        }
+
+                        String lessonDesc = lessonData['description'] ?? '';
+                        if (isEnglish && lessonData['description_en'] != null) {
+                          lessonDesc = lessonData['description_en'];
+                        }
+
+                        final questions = List<Map<String, dynamic>>.from(
+                          lessonData['questions'] ?? [],
+                        ).map((q) => Question.fromMap(q)).toList();
+
+                        final double top = (index * itemHeight) + 120;
+
+                        final double left =
+                            (size.width / 2 - 40) +
+                            (amplitude * math.sin(index * 2.5));
+
+                        final iconData =
+                            _getLessonIconData(lessonTitle, index);
+                        final heroTag =
+                            'lesson_icon_${widget.unitId}_$index';
+
+                        return Positioned(
+                          top: top,
+                          left: left,
+                          child: _buildLessonNode(
+                            context,
+                            index,
+                            lessonTitle,
+                            lessonDesc,
+                            questions,
+                            widget.topicColor,
+                            iconData,
+                            lessonData,
+                            l10n,
+                            heroTag,
+                            isDark,
+                            index % 2 == 0,
+                            documents[index].id,
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -201,7 +260,7 @@ class UnitLessonsScreen extends StatelessWidget {
                   icon: iconData,
                   heroTag: heroTag,
                 ),
-                unitId: unitId,
+                unitId: widget.unitId,
                 lessonId: lessonId,
               ),
             ),
@@ -218,6 +277,7 @@ class UnitLessonsScreen extends StatelessWidget {
             alignment: Alignment.center,
             clipBehavior: Clip.none,
             children: [
+              // Lesson circle node with glow
               Container(
                 width: 80,
                 height: 80,
@@ -226,13 +286,20 @@ class UnitLessonsScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: color.withValues(alpha: 0.4),
-                      blurRadius: 10,
-                      offset: const Offset(0, 6),
+                      color: color.withValues(alpha: 0.5),
+                      blurRadius: 14,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      spreadRadius: -2,
+                      offset: const Offset(0, -2),
                     ),
                   ],
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: Colors.white.withValues(alpha: 0.6),
                     width: 4,
                   ),
                 ),
@@ -242,52 +309,80 @@ class UnitLessonsScreen extends StatelessWidget {
                 ),
               ),
 
+              // Lesson label card with glassmorphism
               Positioned(
                 top: 20,
                 left: isLeft ? 90 : -140,
-                child: Container(
-                  width: 130,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF303030) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      width: 130,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: isDark ? Colors.white : Colors.black87,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.4)
+                            : Colors.white.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.white.withValues(alpha: 0.5),
+                          width: 1.0,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: isLeft ? TextAlign.start : TextAlign.end,
-                      ),
-                      if (description.isNotEmpty)
-                        Text(
-                          description,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: isLeft ? TextAlign.start : TextAlign.end,
-                        ),
-                    ],
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: isDark ? Colors.white : Colors.black87,
+                              shadows: isDark
+                                  ? null
+                                  : [
+                                      Shadow(
+                                        color:
+                                            Colors.white.withValues(alpha: 0.8),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign:
+                                isLeft ? TextAlign.start : TextAlign.end,
+                          ),
+                          if (description.isNotEmpty)
+                            Text(
+                              description,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isDark
+                                    ? Colors.grey[300]
+                                    : Colors.grey[700],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign:
+                                  isLeft ? TextAlign.start : TextAlign.end,
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -415,14 +510,14 @@ class LevelPathPainter extends CustomPainter {
 
     canvas.drawPath(path, paint);
 
-    final borderPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.2)
+    // Subtle glow border for the path
+    final glowPaint = Paint()
+      ..color = Colors.white.withValues(alpha: isDark ? 0.08 : 0.2)
       ..style = PaintingStyle.stroke
-      ..strokeWidth =
-          4.0 // Bordino interno
+      ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawPath(path, borderPaint);
+    canvas.drawPath(path, glowPaint);
   }
 
   @override
