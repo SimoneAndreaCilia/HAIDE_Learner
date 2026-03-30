@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/language_provider.dart';
-import '../providers/theme_provider.dart';
 
 class GamifiedNavBar extends StatelessWidget {
   final int currentIndex;
@@ -18,9 +17,8 @@ class GamifiedNavBar extends StatelessWidget {
     // Dimensioni dello schermo per adattamento
     // double width = MediaQuery.of(context).size.width; // Unused for now but kept for consistency with request if needed later
     final languageProvider = Provider.of<LanguageProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
     final isIt = languageProvider.currentLocale.languageCode == 'it';
-    final isDarkMode = themeProvider.isDarkMode;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Positioned(
       bottom: 20, // Sollevata dal fondo (Effetto Fluttuante)
