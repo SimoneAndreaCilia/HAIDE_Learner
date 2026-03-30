@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../providers/language_provider.dart'; // Import LanguageProvider
 import '../providers/progress_provider.dart';
-import '../providers/theme_provider.dart';
 import '../widgets/animated_sky_background.dart';
 
 class ArenaData {
@@ -291,8 +290,7 @@ class ArenaListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final languageProvider = Provider.of<LanguageProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDarkMode = themeProvider.isDarkMode;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final lang = languageProvider.currentLocale.languageCode;
 
     final Color themeColor = isLocked ? Colors.grey : arena.color;

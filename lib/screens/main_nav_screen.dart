@@ -103,9 +103,11 @@ class _MainNavScreenState extends State<MainNavScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
       extendBody: true, // Extend body behind the floating bar
-      backgroundColor: Colors.lightBlue[50],
+      backgroundColor: isDarkMode ? Theme.of(context).scaffoldBackgroundColor : Colors.lightBlue[50],
       body: Stack(
         children: [
           // 1. PAGE CONTENT (Swipeable)
