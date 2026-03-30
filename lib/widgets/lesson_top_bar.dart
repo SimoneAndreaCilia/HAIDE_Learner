@@ -74,7 +74,7 @@ class LessonTopBar extends StatelessWidget {
                         _buildStatItem(
                           icon: const Text(
                             '🔥',
-                            style: TextStyle(fontSize: 20),
+                            style: TextStyle(fontSize: 24),
                           ),
                           label: '$streak',
                           color: Colors.orange,
@@ -82,7 +82,7 @@ class LessonTopBar extends StatelessWidget {
 
                         // XP (star)
                         _buildStatItem(
-                          icon: const Text('⭐', style: TextStyle(fontSize: 20)),
+                          icon: const Text('⭐', style: TextStyle(fontSize: 24)),
                           label: '$xp',
                           color: Colors.amber,
                         ),
@@ -94,7 +94,7 @@ class LessonTopBar extends StatelessWidget {
                             color: isDark
                                 ? Colors.purpleAccent
                                 : Colors.deepPurple,
-                            size: 22,
+                            size: 28,
                           ),
                           label: '∞',
                           color: isDark
@@ -129,7 +129,7 @@ class LessonTopBar extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                          fontSize: 24,
                           shadows: [
                             Shadow(
                               color: Colors.black.withValues(alpha: 0.3),

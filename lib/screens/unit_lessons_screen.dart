@@ -6,8 +6,10 @@ import 'quiz_screen.dart';
 import '../core/models/question.dart';
 import '../core/theme/quiz_theme.dart';
 import '../widgets/lesson_landscape_background.dart';
+import 'package:provider/provider.dart';
+import '../providers/progress_provider.dart';
+import '../widgets/lesson_node_button.dart';
 import 'dart:math' as math;
-import 'dart:ui';
 
 class UnitLessonsScreen extends StatefulWidget {
   final String unitId;
@@ -49,6 +51,7 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final progress = Provider.of<ProgressProvider>(context);
     final isEnglish = Localizations.localeOf(context).languageCode == 'en';
     final size = MediaQuery.of(context).size;
 
@@ -164,6 +167,26 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
 
                         final iconData = _getLessonIconData(lessonTitle, index);
                         final heroTag = 'lesson_icon_${widget.unitId}_$index';
+                        final lessonId = documents[index].id;
+
+                        final isCompleted = progress.isLessonCompleted(widget.unitId, lessonId);
+                        
+                        bool isUnlocked;
+                        if (index == 0) {
+                          isUnlocked = true;
+                        } else {
+                          final prevLessonId = documents[index - 1].id;
+                          isUnlocked = progress.isLessonCompleted(widget.unitId, prevLessonId);
+                        }
+
+                        LessonNodeState nodeState;
+                        if (isCompleted) {
+                          nodeState = LessonNodeState.completed;
+                        } else if (isUnlocked) {
+                          nodeState = LessonNodeState.current;
+                        } else {
+                          nodeState = LessonNodeState.locked;
+                        }
 
                         return Positioned(
                           top: top,
@@ -181,7 +204,8 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                             heroTag,
                             isDark,
                             index % 2 == 0,
-                            documents[index].id,
+                            lessonId,
+                            nodeState,
                           ),
                         );
                       }),
@@ -218,8 +242,17 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
     bool isDark,
     bool isLeft,
     String? lessonId,
+    LessonNodeState state,
   ) {
-    return GestureDetector(
+    return LessonNodeButton(
+      title: title,
+      description: description,
+      iconData: iconData,
+      primaryColor: color,
+      state: state,
+      heroTag: heroTag,
+      isDark: isDark,
+      isLeft: isLeft,
       onTap: () {
         if (questions.isNotEmpty) {
           final tips = lessonData['tips'] != null
@@ -249,126 +282,6 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
           ).showSnackBar(SnackBar(content: Text(l10n.lessonEmpty)));
         }
       },
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              // Lesson circle node with glow
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 1.0),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.5),
-                      blurRadius: 14,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 4),
-                    ),
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      spreadRadius: -2,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    width: 4,
-                  ),
-                ),
-                child: Hero(
-                  tag: heroTag,
-                  child: Icon(iconData, color: Colors.white, size: 36),
-                ),
-              ),
-
-              // Lesson label card with glassmorphism
-              Positioned(
-                top: 20,
-                left: isLeft ? 90 : -140,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      width: 130,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.black.withValues(alpha: 0.4)
-                            : Colors.white.withValues(alpha: 0.65),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : Colors.white.withValues(alpha: 0.5),
-                          width: 1.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 6,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: isDark ? Colors.white : Colors.black87,
-                              shadows: isDark
-                                  ? null
-                                  : [
-                                      Shadow(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.8,
-                                        ),
-                                        blurRadius: 2,
-                                      ),
-                                    ],
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: isLeft ? TextAlign.start : TextAlign.end,
-                          ),
-                          if (description.isNotEmpty)
-                            Text(
-                              description,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: isDark
-                                    ? Colors.grey[300]
-                                    : Colors.grey[700],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: isLeft
-                                  ? TextAlign.start
-                                  : TextAlign.end,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
