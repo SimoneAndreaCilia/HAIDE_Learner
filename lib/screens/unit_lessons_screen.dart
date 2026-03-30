@@ -92,7 +92,7 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
 
           const double itemHeight = 140.0;
           const double amplitude = 70.0;
-          final double totalHeight = documents.length * itemHeight + 200;
+          final double totalHeight = documents.length * itemHeight + 280;
 
           return Stack(
             children: [
@@ -155,7 +155,7 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                           lessonData['questions'] ?? [],
                         ).map((q) => Question.fromMap(q)).toList();
 
-                        final double top = (index * itemHeight) + 120;
+                        final double top = (index * itemHeight) + 200;
 
                         final double left =
                             (size.width / 2 - 40) +
@@ -465,16 +465,16 @@ class LevelPathPainter extends CustomPainter {
     final path = Path();
 
     final double startX = size.width / 2;
-    final double startY = 120 + 40;
+    final double startY = 200 + 40;
 
     path.moveTo(startX, startY);
 
     for (int i = 0; i < itemCount - 1; i++) {
-      double nextY = ((i + 1) * itemHeight) + 120 + 40;
+      double nextY = ((i + 1) * itemHeight) + 200 + 40;
       double nextXOffset = amplitude * math.sin((i + 1) * 2.5);
       double nextX = (size.width / 2) + nextXOffset;
 
-      double currentY = ((i) * itemHeight) + 120 + 40;
+      double currentY = ((i) * itemHeight) + 200 + 40;
       double currentX = (size.width / 2) + (amplitude * math.sin(i * 2.5));
 
       double cp1x = currentX;
