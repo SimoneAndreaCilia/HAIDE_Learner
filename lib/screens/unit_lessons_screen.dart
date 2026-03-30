@@ -11,6 +11,7 @@ import '../providers/progress_provider.dart';
 import '../widgets/lesson_node_button.dart';
 import '../widgets/lesson_popup_bubble.dart';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 class UnitLessonsScreen extends StatefulWidget {
   final String unitId;
@@ -100,6 +101,15 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
           final double calculatedHeight = documents.length * itemHeight + 280;
           final double totalHeight = math.max(size.height, calculatedHeight);
 
+          int currentActiveIndex = 0;
+          for (int i = 0; i < documents.length; i++) {
+            if (i == 0 || progress.isLessonCompleted(widget.unitId, documents[i - 1].id)) {
+              currentActiveIndex = i;
+            } else {
+              break;
+            }
+          }
+
           return Stack(
             children: [
               // LAYER 1: Landscape background with parallax
@@ -140,6 +150,7 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                                 ? Colors.white.withValues(alpha: 0.15)
                                 : Colors.white.withValues(alpha: 0.35),
                             isDark: isDark,
+                            currentActiveIndex: currentActiveIndex,
                           ),
                         ),
                       ),
@@ -266,7 +277,7 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                           _selectedLessonIndex! >= documents.length)
                       ? const SizedBox.shrink(key: ValueKey('empty_popup'))
                       : Builder(
-                          key: ValueKey('lesson_overlay_${_selectedLessonIndex}'),
+                          key: ValueKey('lesson_overlay_$_selectedLessonIndex'),
                           builder: (context) {
                             final index = _selectedLessonIndex!;
                             final lessonData =
@@ -526,6 +537,7 @@ class LevelPathPainter extends CustomPainter {
   final double amplitude;
   final Color pathColor;
   final bool isDark;
+  final int currentActiveIndex;
 
   LevelPathPainter({
     required this.itemCount,
@@ -533,24 +545,21 @@ class LevelPathPainter extends CustomPainter {
     required this.amplitude,
     required this.pathColor,
     required this.isDark,
+    required this.currentActiveIndex,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (itemCount <= 0) return;
-
-    final paint = Paint()
-      ..color = pathColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 12.0
-      ..strokeCap = StrokeCap.round;
+    if (itemCount <= 1) return;
 
     final path = Path();
+    List<double> nodeYPositions = [];
 
     final double startX = size.width / 2;
     final double startY = 200 + 40;
 
     path.moveTo(startX, startY);
+    nodeYPositions.add(startY);
 
     for (int i = 0; i < itemCount - 1; i++) {
       double nextY = ((i + 1) * itemHeight) + 200 + 40;
@@ -567,22 +576,80 @@ class LevelPathPainter extends CustomPainter {
       double cp2y = nextY - (itemHeight / 2);
 
       path.cubicTo(cp1x, cp1y, cp2x, cp2y, nextX, nextY);
+      nodeYPositions.add(nextY);
     }
 
-    canvas.drawPath(path, paint);
+    // Extract path metrics safely
+    final ui.PathMetrics pathMetrics = path.computeMetrics();
+    final iterator = pathMetrics.iterator;
+    if (!iterator.moveNext()) return;
+    
+    final ui.PathMetric metric = iterator.current;
+    final double pathLength = metric.length;
 
-    // Subtle glow border for the path
-    final glowPaint = Paint()
-      ..color = Colors.white.withValues(alpha: isDark ? 0.08 : 0.2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0
-      ..strokeCap = StrokeCap.round;
+    // Stone dimensions
+    const double stoneWidth = 24.0;
+    const double stoneHeight = 12.0;
+    const double step = 32.0; // Distance between stones
 
-    canvas.drawPath(path, glowPaint);
+    // Colors
+    final Color activeStoneColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFFF5F5F5);
+    final Color activeStoneShadow =
+        isDark ? const Color(0xFF9E9E9E) : const Color(0xFFBDBDBD);
+
+    final Color inactiveStoneColor =
+        isDark ? const Color(0xFF424242) : const Color(0xFFEEEEEE);
+    final Color inactiveStoneShadow =
+        isDark ? const Color(0xFF212121) : const Color(0xFFE0E0E0);
+
+    for (double distance = 0.0; distance < pathLength; distance += step) {
+      final ui.Tangent? tangent = metric.getTangentForOffset(distance);
+      if (tangent == null) continue;
+
+      // Determine active status based on Y position heading to a node
+      int segmentIndex = 1;
+      for (int i = 1; i < nodeYPositions.length; i++) {
+        if (tangent.position.dy <= nodeYPositions[i]) {
+          segmentIndex = i;
+          break;
+        }
+      }
+
+      bool isActive = segmentIndex <= currentActiveIndex;
+
+      Color mainColor = isActive ? activeStoneColor : inactiveStoneColor;
+      Color shadowColor = isActive ? activeStoneShadow : inactiveStoneShadow;
+
+      canvas.save();
+      canvas.translate(tangent.position.dx, tangent.position.dy);
+
+      // Draw shadow
+      final shadowRRect = RRect.fromRectAndRadius(
+        Rect.fromCenter(
+            center: const Offset(0, 4), width: stoneWidth, height: stoneHeight),
+        const Radius.circular(6),
+      );
+      canvas.drawRRect(shadowRRect, Paint()..color = shadowColor);
+
+      // Draw top stone
+      final mainRRect = RRect.fromRectAndRadius(
+        Rect.fromCenter(
+            center: Offset.zero, width: stoneWidth, height: stoneHeight),
+        const Radius.circular(6),
+      );
+      canvas.drawRRect(mainRRect, Paint()..color = mainColor);
+
+      canvas.restore();
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
+  bool shouldRepaint(covariant LevelPathPainter oldDelegate) {
+    return oldDelegate.itemCount != itemCount ||
+        oldDelegate.itemHeight != itemHeight ||
+        oldDelegate.amplitude != amplitude ||
+        oldDelegate.isDark != isDark ||
+        oldDelegate.currentActiveIndex != currentActiveIndex;
   }
 }
