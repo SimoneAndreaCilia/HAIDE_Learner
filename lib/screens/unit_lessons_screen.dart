@@ -200,6 +200,48 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                           ),
                         ),
 
+                      // DECORATION: Family decoration – right side (Family Arena only)
+                      if (widget.unitId == 'unit_03_family')
+                        Positioned(
+                          top: 170,
+                          right: 0,
+                          child: IgnorePointer(
+                            child: Image.asset(
+                              'assets/images/familydec.png',
+                              width: 160,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
+                      // DECORATION: Family kid – left side (Family Arena only)
+                      if (widget.unitId == 'unit_03_family')
+                        Positioned(
+                          top: 300,
+                          left: 35,
+                          child: IgnorePointer(
+                            child: Image.asset(
+                              'assets/images/familykid.png',
+                              width: 140,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
+                      // DECORATION: Grandparents – right side (Family Arena only)
+                      if (widget.unitId == 'unit_03_family')
+                        Positioned(
+                          top: 426,
+                          right: 20,
+                          child: IgnorePointer(
+                            child: Image.asset(
+                              'assets/images/grandparentsdec.png',
+                              width: 175,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
                       // PATH
                       Positioned.fill(
                         child: CustomPaint(
