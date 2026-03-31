@@ -242,6 +242,62 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                           ),
                         ),
 
+                      // DECORATION: Bottles – right side (Food Arena only)
+                      if (widget.unitId == 'unit_04_food')
+                        Positioned(
+                          top: 190,
+                          right: 25,
+                          child: IgnorePointer(
+                            child: Image.asset(
+                              'assets/images/bottles.png',
+                              width: 100,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
+                      // DECORATION: Menu sign – left side (Food Arena only)
+                      if (widget.unitId == 'unit_04_food')
+                        Positioned(
+                          top: 300,
+                          left: 0,
+                          child: IgnorePointer(
+                            child: Image.asset(
+                              'assets/images/menusign.png',
+                              width: 160,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
+                      // DECORATION: Restaurant decoration – right side (Food Arena only)
+                      if (widget.unitId == 'unit_04_food')
+                        Positioned(
+                          top: 445,
+                          right: 30,
+                          child: IgnorePointer(
+                            child: Image.asset(
+                              'assets/images/restaurantdecoration.png',
+                              width: 150,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
+                      // DECORATION: Goat waiter – bottom left (Food Arena only)
+                      if (widget.unitId == 'unit_04_food')
+                        Positioned(
+                          bottom: 179,
+                          left: 20,
+                          child: IgnorePointer(
+                            child: Image.asset(
+                              'assets/images/goatwaiter.png',
+                              width: 150,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
                       // PATH
                       Positioned.fill(
                         child: CustomPaint(
