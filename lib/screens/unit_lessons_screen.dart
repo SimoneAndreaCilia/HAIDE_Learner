@@ -103,7 +103,11 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
 
           int currentActiveIndex = 0;
           for (int i = 0; i < documents.length; i++) {
-            if (i == 0 || progress.isLessonCompleted(widget.unitId, documents[i - 1].id)) {
+            if (i == 0 ||
+                progress.isLessonCompleted(
+                  widget.unitId,
+                  documents[i - 1].id,
+                )) {
               currentActiveIndex = i;
             } else {
               break;
@@ -128,6 +132,8 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                 ),
               ),
 
+              // LAYER 1.5: Goat walking – fixed top-right (Survival Arena only)
+
               // LAYER 2: Scrollable content (path + nodes)
               SingleChildScrollView(
                 controller: _scrollController,
@@ -139,7 +145,34 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                   width: size.width,
                   child: Stack(
                     children: [
-                      // PERCORSO
+                      if (widget.unitId == 'unit_01_survival')
+                        Positioned(
+                          top: 400,
+                          right: 0,
+                          child: IgnorePointer(
+                            child: Image.asset(
+                              'assets/images/goatwalking.png',
+                              width: 200,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
+                      // DECORATION: Tent – bottom left(Survival Arena only)
+                      if (widget.unitId == 'unit_01_survival')
+                        Positioned(
+                          bottom: 360,
+                          left: 10,
+                          child: IgnorePointer(
+                            child: Image.asset(
+                              'assets/images/tent.png',
+                              width: 170,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
+                      // PATH
                       Positioned.fill(
                         child: CustomPaint(
                           painter: LevelPathPainter(
@@ -180,14 +213,20 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                         final heroTag = 'lesson_icon_${widget.unitId}_$index';
                         final lessonId = documents[index].id;
 
-                        final isCompleted = progress.isLessonCompleted(widget.unitId, lessonId);
-                        
+                        final isCompleted = progress.isLessonCompleted(
+                          widget.unitId,
+                          lessonId,
+                        );
+
                         bool isUnlocked;
                         if (index == 0) {
                           isUnlocked = true;
                         } else {
                           final prevLessonId = documents[index - 1].id;
-                          isUnlocked = progress.isLessonCompleted(widget.unitId, prevLessonId);
+                          isUnlocked = progress.isLessonCompleted(
+                            widget.unitId,
+                            prevLessonId,
+                          );
                         }
 
                         LessonNodeState nodeState;
@@ -219,8 +258,6 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                           ),
                         );
                       }),
-
-
                     ],
                   ),
                 ),
@@ -259,21 +296,23 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
               Positioned.fill(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: ScaleTransition(
-                        scale: Tween<double>(begin: 0.9, end: 1.0).animate(
-                          CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutBack,
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutBack,
+                              ),
+                            ),
+                            child: child,
                           ),
-                        ),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: (_selectedLessonIndex == null ||
+                        );
+                      },
+                  child:
+                      (_selectedLessonIndex == null ||
                           _selectedLessonIndex! >= documents.length)
                       ? const SizedBox.shrink(key: ValueKey('empty_popup'))
                       : Builder(
@@ -283,32 +322,43 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                             final lessonData =
                                 documents[index].data() as Map<String, dynamic>;
 
-                            String lessonTitle = lessonData['title'] ?? 'Lesson';
+                            String lessonTitle =
+                                lessonData['title'] ?? 'Lesson';
                             if (isEnglish && lessonData['title_en'] != null) {
                               lessonTitle = lessonData['title_en'];
                             }
 
                             String lessonDesc = lessonData['description'] ?? '';
-                            if (isEnglish && lessonData['description_en'] != null) {
+                            if (isEnglish &&
+                                lessonData['description_en'] != null) {
                               lessonDesc = lessonData['description_en'];
                             }
 
-                            final double topInCanvas = (index * itemHeight) + 200;
-                            final double scrollOffset = _scrollController.hasClients
+                            final double topInCanvas =
+                                (index * itemHeight) + 200;
+                            final double scrollOffset =
+                                _scrollController.hasClients
                                 ? _scrollController.offset
                                 : 0.0;
-                            final double topOnScreen = topInCanvas - scrollOffset;
+                            final double topOnScreen =
+                                topInCanvas - scrollOffset;
 
-                            final double left = (size.width / 2 - 40) +
+                            final double left =
+                                (size.width / 2 - 40) +
                                 (amplitude * math.sin(index * 2.5));
 
-                            final iconData = _getLessonIconData(lessonTitle, index);
+                            final iconData = _getLessonIconData(
+                              lessonTitle,
+                              index,
+                            );
                             final heroTag =
                                 'lesson_icon_overlay_${widget.unitId}_$index';
                             final lessonId = documents[index].id;
 
-                            final isCompleted =
-                                progress.isLessonCompleted(widget.unitId, lessonId);
+                            final isCompleted = progress.isLessonCompleted(
+                              widget.unitId,
+                              lessonId,
+                            );
 
                             bool isUnlocked;
                             if (index == 0) {
@@ -316,7 +366,9 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                             } else {
                               final prevLessonId = documents[index - 1].id;
                               isUnlocked = progress.isLessonCompleted(
-                                  widget.unitId, prevLessonId);
+                                widget.unitId,
+                                prevLessonId,
+                              );
                             }
 
                             LessonNodeState nodeState;
@@ -371,7 +423,8 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                                       if (questions.isNotEmpty) {
                                         final tips = lessonData['tips'] != null
                                             ? List<Map<String, dynamic>>.from(
-                                                lessonData['tips'])
+                                                lessonData['tips'],
+                                              )
                                             : null;
 
                                         Navigator.push(
@@ -392,7 +445,9 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                                           ),
                                         );
                                       } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           SnackBar(
                                             content: Text(l10n.lessonEmpty),
                                           ),
@@ -583,7 +638,7 @@ class LevelPathPainter extends CustomPainter {
     final ui.PathMetrics pathMetrics = path.computeMetrics();
     final iterator = pathMetrics.iterator;
     if (!iterator.moveNext()) return;
-    
+
     final ui.PathMetric metric = iterator.current;
     final double pathLength = metric.length;
 
@@ -593,15 +648,19 @@ class LevelPathPainter extends CustomPainter {
     const double step = 32.0; // Distance between stones
 
     // Colors
-    final Color activeStoneColor =
-        isDark ? const Color(0xFFE0E0E0) : const Color(0xFFF5F5F5);
-    final Color activeStoneShadow =
-        isDark ? const Color(0xFF9E9E9E) : const Color(0xFFBDBDBD);
+    final Color activeStoneColor = isDark
+        ? const Color(0xFFE0E0E0)
+        : const Color(0xFFF5F5F5);
+    final Color activeStoneShadow = isDark
+        ? const Color(0xFF9E9E9E)
+        : const Color(0xFFBDBDBD);
 
-    final Color inactiveStoneColor =
-        isDark ? const Color(0xFF424242) : const Color(0xFFEEEEEE);
-    final Color inactiveStoneShadow =
-        isDark ? const Color(0xFF212121) : const Color(0xFFE0E0E0);
+    final Color inactiveStoneColor = isDark
+        ? const Color(0xFF424242)
+        : const Color(0xFFEEEEEE);
+    final Color inactiveStoneShadow = isDark
+        ? const Color(0xFF212121)
+        : const Color(0xFFE0E0E0);
 
     for (double distance = 0.0; distance < pathLength; distance += step) {
       final ui.Tangent? tangent = metric.getTangentForOffset(distance);
@@ -627,7 +686,10 @@ class LevelPathPainter extends CustomPainter {
       // Draw shadow
       final shadowRRect = RRect.fromRectAndRadius(
         Rect.fromCenter(
-            center: const Offset(0, 4), width: stoneWidth, height: stoneHeight),
+          center: const Offset(0, 4),
+          width: stoneWidth,
+          height: stoneHeight,
+        ),
         const Radius.circular(6),
       );
       canvas.drawRRect(shadowRRect, Paint()..color = shadowColor);
@@ -635,7 +697,10 @@ class LevelPathPainter extends CustomPainter {
       // Draw top stone
       final mainRRect = RRect.fromRectAndRadius(
         Rect.fromCenter(
-            center: Offset.zero, width: stoneWidth, height: stoneHeight),
+          center: Offset.zero,
+          width: stoneWidth,
+          height: stoneHeight,
+        ),
         const Radius.circular(6),
       );
       canvas.drawRRect(mainRRect, Paint()..color = mainColor);
