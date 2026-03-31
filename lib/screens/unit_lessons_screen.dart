@@ -172,6 +172,34 @@ class _UnitLessonsScreenState extends State<UnitLessonsScreen> {
                           ),
                         ),
 
+                      // DECORATION: Goat with numbers – right side (Time Arena only)
+                      if (widget.unitId == 'unit_02_numbers_time')
+                        Positioned(
+                          top: 400,
+                          right: 0,
+                          child: IgnorePointer(
+                            child: Image.asset(
+                              'assets/images/goatnumber.png',
+                              width: 180,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
+                      // DECORATION: Time decorations – top left (Time Arena only)
+                      if (widget.unitId == 'unit_02_numbers_time')
+                        Positioned(
+                          top: 155,
+                          left: 0,
+                          child: IgnorePointer(
+                            child: Image.asset(
+                              'assets/images/timedecorations.png',
+                              width: 200,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
                       // PATH
                       Positioned.fill(
                         child: CustomPaint(
